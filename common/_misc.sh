@@ -71,9 +71,15 @@ function checkRoot() {
 
 # Загружает .env
 function loadEnv() {
-    if [ ! -f ".env" ]; then
-        logerr "Файл .env не найден!"
+	DIR="$(dirname -- "$0")"
+	ENVFILE="$(dirname -- "$0")/../.env"
+
+	echo "XXX1 $DIR"
+	echo "XXX2 $ENVFILE"
+
+    if [ ! -f "$ENVFILE" ]; then
+        logerr "Файл $ENVFILE не найден!"
         exit 1
     fi
-    source .env
+    source "$ENVFILE"
 }
