@@ -66,16 +66,15 @@ sleep 1
 systemctl is-active --quiet fail2ban && STATUS="активен" || STATUS="не запущен"
 
 logok "Fail2ban установлен и настроен.
-  - Защищаемый сервис: SSH
-  - Попыток входа до блокировки: 3
-  - Время блокировки: 7 дней
-  - Статус службы: $STATUS
+----------------------------------------
+Защищаемый сервис: SSH
+Попыток входа до блокировки: 3
+Время блокировки по IP: 7 дней
+Статус службы: $STATUS
 
-Проверить состояние:
-  sudo fail2ban-client status sshd
-
-Просмотр заблокированных IP:
-  sudo fail2ban-client status sshd | grep 'Banned IPs'
-
-Разблокировать IP:
-  sudo fail2ban-client unban <IP>"
+Рекомендации:
+ - проверить состояние: sudo fail2ban-client status sshd
+ - просмотр заблокированных IP: sudo fail2ban-client status sshd | grep 'Banned IPs'
+ - разблокировать IP: sudo fail2ban-client unban <IP>
+----------------------------------------
+"

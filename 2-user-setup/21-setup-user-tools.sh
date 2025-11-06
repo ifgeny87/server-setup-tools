@@ -17,7 +17,7 @@ select-editor
 logr "Заменяем шелл по умолчанию на zsh"
 chsh -s $(which zsh)
 
-logr "Настраиваем vimrc"
+logr "Настраиваем vimrc..."
 cat > ~/.vimrc <<EOF
 "
 " Author: $(whoami)
@@ -32,7 +32,7 @@ set mouse=a
 colorscheme koehler
 EOF
 
-logr "Настраиваем zshrc"
+logr "Настраиваем zshrc..."
 cat > ~/.zshrc <<EOF
 #
 # Author: $(whoami)
@@ -41,7 +41,7 @@ LC_CTYPE=en_US.UTF-8
 LC_ALL=en_US.UTF-8
 EOF
 
-logr "Настраиваем bashrc"
+logr "Настраиваем bashrc..."
 cat > ~/.bashrc <<EOF
 #
 # Author: $(whoami)
@@ -52,3 +52,5 @@ export PS1=\"\[\033[31;1m\]\u\[\033[33;1m\]@\[\033[36;1m\]\h\[\033[m\]:\[\033[34
 export CLICOLOR=1
 export LSCOLORS=ExFxBxDxCxegedabagacad
 EOF
+
+logok "Конфигурации настроены"

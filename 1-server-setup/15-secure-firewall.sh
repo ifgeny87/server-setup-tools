@@ -9,7 +9,7 @@ loadEnv
 
 # Проверка обязательных переменных
 if [ -z "$SSH_PORT" ] ; then
-    logerr "Ошибка: в .env не заданы SSH_PORT ."
+    logerr "Не задана переменная окружения: SSH_PORT"
     exit 1
 fi
 
@@ -67,8 +67,8 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/sbin/iptables-restore < /etc/iptables/rules.v4
-ExecReload=/sbin/iptables-restore < /etc/iptables/rules.v4
+ExecStart=/usr/sbin/iptables-restore /etc/iptables/rules.v4
+ExecReload=/usr/sbin/iptables-restore /etc/iptables/rules.v4
 RemainAfterExit=yes
 
 [Install]
