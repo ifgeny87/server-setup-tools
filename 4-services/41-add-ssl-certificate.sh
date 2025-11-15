@@ -33,7 +33,7 @@ cat > $FILE <<EOF
 # Author: $(whoami)
 # Created: $(timestamp)
 server {
-    set \$DOMAIN $DOAMIN;
+    set \$DOMAIN $DOMAIN;
     set \$ENTRYPOINT 127.0.0.1:8080;
 
     listen 443 ssl;
