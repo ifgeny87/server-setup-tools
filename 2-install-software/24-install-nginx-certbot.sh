@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-. "$(dirname -- "$0")/_misc.sh" # load misc
+. "$(dirname -- "$0")/../common/_misc.sh" # load misc
 
 # Скрипт выполняет установку nginx и certbot, подготавливает конфиг для получения SSL сертификатов
 

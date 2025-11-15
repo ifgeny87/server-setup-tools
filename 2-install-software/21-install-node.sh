@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-. "$(dirname -- "$0")/_misc.sh" # load misc
+. "$(dirname -- "$0")/../common/_misc.sh" # load misc
 
 # Выполняет установку Node.js
 # Источник: https://timeweb.cloud/tutorials/nodejs/kak-ustanovit-node-js-v-ubuntu-22-04
