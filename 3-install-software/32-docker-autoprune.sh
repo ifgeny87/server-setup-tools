@@ -17,4 +17,5 @@ cat > $FILE <<EOF
 docker image prune -f
 EOF
 chmod +x $FILE
+
 logok "Создан файл ежедневного расписания: $FILE"

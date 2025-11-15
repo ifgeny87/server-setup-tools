@@ -5,23 +5,25 @@ set -euo pipefail
 checkRoot
 loadEnv
 
+loghead "Настройка SSH сервера"
+
 # Проверка обязательной группы
 if [ -z "$SSH_GROUP" ]; then
-    logerr "В .env не задана SSH_GROUP"
+    logerr "Отсутствует переменная окружения: SSH_GROUP"
     exit 1
 fi
 
 # Проверка обязательных переменных
 if [ -z "$SSH_PORT" ] || [ -z "$SSH_CONFIG_BACKUP" ]; then
-    logerr "В .env не заданы SSH_PORT или SSH_CONFIG_BACKUP"
+    logerr "Отсутствует переменная окружения: SSH_PORT или SSH_CONFIG_BACKUP"
     exit 1
 fi
 
 # Создаём группу для пользвоателей SSH
 # Проверка дублируется при создании пользователя
 if ! getent group "$SSH_GROUP"; then
-  groupadd "$SSH_GROUP"
-  logok "Создана группа: $SSH_GROUP"
+    logr "Создается группа: $SSH_GROUP"
+    groupadd "$SSH_GROUP"
 fi
 
 loghead "Настройка SSH‑сервера"
@@ -30,10 +32,10 @@ loghead "Настройка SSH‑сервера"
 cp /etc/ssh/sshd_config "$SSH_CONFIG_BACKUP"
 
 if [ $? -ne 0 ]; then
-    logerr "Не удалось создать бэкап файла /etc/ssh/sshd_config"
+    logerr "Не удалось создать бэкап файла: /etc/ssh/sshd_config"
     exit 1
 fi
-logok "Бэкап конфигурации сохранен: $SSH_CONFIG_BACKUP"
+logd "Бэкап конфигурации сохранен: $SSH_CONFIG_BACKUP"
 
 # 2. Удаляем или меняем старые директивы, если они есть в sshd_config
 sed -i -E "/^PermitRootLogin\s.*/d" /etc/ssh/sshd_config
@@ -67,7 +69,7 @@ fi
 logr "Проверяем конфигурацию SSH..."
 sshd -t
 if [ $? -eq 0 ]; then
-    logok "Настройка SSH‑сервера завершена.
+    logok "Настройка SSH‑сервера завершена
 ----------------------------------------
 Порт SSH: $SSH_PORT
 Вход root по SSH: запрещён (check: $(sshd -T | grep -E PermitRootLogin))

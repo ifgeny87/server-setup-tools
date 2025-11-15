@@ -22,8 +22,8 @@ loghead "Создание нового пользователя"
 # Создаём группу для пользвоателей SSH
 # Проверка дублируется при настройке ssh
 if ! getent group "$SSH_GROUP" >/dev/null; then
-  groupadd "$SSH_GROUP"
-  logok "Создана группа: $SSH_GROUP"
+    logr "Создается группа: $SSH_GROUP"
+    groupadd "$SSH_GROUP"
 fi
 
 # 1. Запрашиваем имя пользователя
@@ -38,14 +38,14 @@ fi
 
 # 2. Проверяем существование пользователя
 if id "$NEWUSERNAME" &>/dev/null; then
-    logerr "Пользователь '$NEWUSERNAME' уже существует"
+    logerr "Пользователь уже существует: $NEWUSERNAME"
     exit 1
 fi
 
 HOME_DIR="/home/$NEWUSERNAME"
 
 # 3. Создаём пользователя (без пароля, с домашней директорией)
-logr "Создаём пользователя '$NEWUSERNAME'..."
+logr "Создаём пользователя: $NEWUSERNAME"
 adduser --disabled-password --gecos "" "$NEWUSERNAME"
 if [ $? -ne 0 ]; then
     logerr "Не удалось создать пользователя: $NEWUSERNAME"
@@ -53,7 +53,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # 4. Добавляем в группы
-logr "Добавляем '$NEWUSERNAME' в группы: $USER_GROUPS..."
+logr "Добавляем пользователя $NEWUSERNAME в группы: $USER_GROUPS"
 for group in $USER_GROUPS; do
     usermod -aG "$group" "$NEWUSERNAME"
     if [ $? -ne 0 ]; then
@@ -85,10 +85,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-logok "Пользователь '$NEWUSERNAME' создан и настроен.
+logok "Создан и настроен новый пользователь: $NEWUSERNAME
 ----------------------------------------
 Рекомендации:
  - задать пароль для этого пользователя: passwd $NEWUSERNAME
- - запустить скрипт для настройки SSH сервера: ./1-server-setup/13-ssh-restrict.sh
 ----------------------------------------
 "

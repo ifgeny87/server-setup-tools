@@ -18,8 +18,9 @@ JAIL_LOCAL="/etc/fail2ban/jail.local"
 
 # Резервная копия, если файл уже есть
 if [ -f "$JAIL_LOCAL" ]; then
-  cp "$JAIL_LOCAL" "$JAIL_LOCAL.bak.$(date +%F_%H-%M-%S)"
-  logok "Резервная копия jail.local создана"
+    JAIL_BACKUP=$JAIL_LOCAL.bak.$(date +%F_%H-%M-%S)
+    logr "Создается копия jail.local: $JAIL_BACKUP"
+    cp "$JAIL_LOCAL" "$JAIL_BACKUP"
 fi
 
 # Настраиваем fail2ban для SSH
@@ -65,7 +66,7 @@ systemctl restart fail2ban
 sleep 1
 systemctl is-active --quiet fail2ban && STATUS="активен" || STATUS="не запущен"
 
-logok "Fail2ban установлен и настроен.
+logok "Fail2ban установлен и настроен
 ----------------------------------------
 Защищаемый сервис: SSH
 Попыток входа до блокировки: 3

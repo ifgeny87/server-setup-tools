@@ -10,7 +10,6 @@ loghead "Установка и настройка nginx и certbot"
 
 logr "Установка nginx и certbot..."
 apt-get install -yy nginx certbot python3-certbot-nginx
-logok "Установка выполнена"
 
 #logr "Создание папки для прохождения ACME квеста..."
 #mkdir -p /var/www/acme
@@ -18,7 +17,6 @@ logok "Установка выполнена"
 
 logr "Отключение дефолтного конфига: /etc/nginx/sites-enabled/default"
 rm /etc/nginx/sites-enabled/default
-logok "Файл удален: /etc/nginx/sites-enabled/default"
 
 FILE=/etc/nginx/conf.d/default.conf
 logr "Создание дефолтного конфига nginx: $FILE"
@@ -39,14 +37,12 @@ server {
     }
 }
 EOF
-logok "Файл создан: $FILE"
 
 logr "Регистрация в certbot..."
 certbot register -m admin@mail.ru
-logok "Регистрация завершена"
 
-logr "Добавление расписания для автоматического обновления сертификатов и перезапуска nginx..."
 FILE=/etc/cron.daily/certbot-renew
+logr "Добавление расписания для автоматического обновления сертификатов и перезапуска nginx: $FILE"
 cat > $FILE <<EOF
 #!/bin/bash -e
 # Location: $FILE
@@ -56,7 +52,6 @@ nginx -t
 nginx -s reload
 EOF
 chmod +x $FILE
-logok "Создан файл ежедневного расписания: $FILE"
 
 logok "Установка и настройка nginx + certbot завершена
 ----------------------------------------

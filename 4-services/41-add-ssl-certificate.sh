@@ -20,15 +20,13 @@ if [ -z "$DOMAIN" ]; then
     exit 1
 fi
 
-logr "Проверка получения сертификата для домена $DOMAIN"
+logr "Проверка получения сертификата для домена: $DOMAIN"
 certbot certonly --dry-run --nginx -d "$DOMAIN"
-logok "Проверка прошла успешно"
 
-logr "Получение SSL сертификата для домена $DOMAIN"
+logr "Получение SSL сертификата для домена: $DOMAIN"
 certbot certonly --dry-run --nginx -d "$DOMAIN"
-logok "SSL сертификат для домена получен"
 
-logr "Создается шаблонный конфиг nginx для нового домена"
+logr "Создается шаблонный конфиг nginx для нового домена: $DOMAIN"
 FILE=/etc/nginx/conf.d/${DOMAIN}.conf
 cat > $FILE <<EOF
 # Location: $FILE
@@ -84,10 +82,10 @@ server {
     }
 }
 EOF
-logok "Создан файл конфигурации nginx: $FILE"
 
 logok "Получение SSL сертификата завершено
 ----------------------------------------
+Создан файл конфигурации nginx: $FILE
 Рекомендации:
  - рекомендуется проверить конфигурацю nginx вручную: $FILE
  - тест конфигурации: nginx -t

@@ -9,7 +9,7 @@ checkRoot
 
 VERSION=${VERSION:22}
 
-loghead "Установка Node.js версии $VERSION}"
+loghead "Установка Node.js версии ${VERSION}"
 
 logr "Настройка пакетов..."
 curl -fsSL https://deb.nodesource.com/setup_${VERSION}.x | sudo -E bash -
@@ -17,7 +17,7 @@ curl -fsSL https://deb.nodesource.com/setup_${VERSION}.x | sudo -E bash -
 logr "Установка..."
 apt-get install -yy nodejs
 
-logok "Установка выполнена
+logok "Установка Node.js завершена
 ----------------------------------------
 Node.js: $(node -v)
 NPM: $(npm -v)

@@ -58,7 +58,7 @@ apt-get autoremove -y
 apt-get clean
 
 if [ "$removed" = true ]; then
-    logok "Почтовые серверы удалены.
+    logok "Почтовые серверы удалены
 ----------------------------------------
 Рекомендации:
  - перезагрузить систему: sudo reboot

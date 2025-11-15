@@ -90,4 +90,4 @@ systemctl daemon-reload
 systemctl enable firewall-monitor.timer
 systemctl start firewall-monitor.timer
 
-logok "Telegram уведомления будут отправляться при попытках доступа на запрещённые порты."
+logok "Telegram уведомления будут отправляться при попытках доступа на запрещённые порты"
