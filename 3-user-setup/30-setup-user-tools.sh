@@ -18,7 +18,7 @@ logr "Заменяем шелл по умолчанию на zsh"
 chsh -s $(which zsh)
 
 logr "Настраиваем vimrc..."
-cat > ~/.vimrc <<EOF
+cat >> ~/.vimrc <<EOF
 "
 " Author: $(whoami)
 " Date: $(timestamp)
@@ -33,7 +33,7 @@ colorscheme koehler
 EOF
 
 logr "Настраиваем zshrc..."
-cat > ~/.zshrc <<EOF
+cat >> ~/.zshrc <<EOF
 
 # Author: $(whoami)
 # Date: $(timestamp)
@@ -42,7 +42,7 @@ LC_ALL=en_US.UTF-8
 EOF
 
 logr "Настраиваем bashrc..."
-cat > ~/.bashrc <<EOF
+cat >> ~/.bashrc <<EOF
 
 # Author: $(whoami)
 # Date: $(timestamp)
