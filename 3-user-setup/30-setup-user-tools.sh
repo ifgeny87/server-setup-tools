@@ -34,7 +34,7 @@ EOF
 
 logr "Настраиваем zshrc..."
 cat >> ~/.zshrc <<EOF
-
+#
 # Author: $(whoami)
 # Date: $(timestamp)
 LC_CTYPE=en_US.UTF-8
@@ -43,7 +43,7 @@ EOF
 
 logr "Настраиваем bashrc..."
 cat >> ~/.bashrc <<EOF
-
+#
 # Author: $(whoami)
 # Date: $(timestamp)
 export HISTTIMEFORMAT=\"%Y-%m-%d %H:%M:%S  \"

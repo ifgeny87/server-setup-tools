@@ -24,7 +24,7 @@ logr "Проверка получения сертификата для доме
 certbot certonly --dry-run --nginx -d "$DOMAIN"
 
 logr "Получение SSL сертификата для домена: $DOMAIN"
-certbot certonly --dry-run --nginx -d "$DOMAIN"
+certbot certonly --nginx -d "$DOMAIN"
 
 logr "Создается шаблонный конфиг nginx для нового домена: $DOMAIN"
 FILE=/etc/nginx/conf.d/${DOMAIN}.conf

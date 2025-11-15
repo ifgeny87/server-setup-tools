@@ -40,7 +40,7 @@ server {
 EOF
 
 logr "Регистрация в certbot..."
-certbot register -m admin@mail.ru
+certbot register
 
 FILE=/etc/cron.daily/certbot-renew
 logr "Добавление расписания для автоматического обновления сертификатов и перезапуска nginx: $FILE"

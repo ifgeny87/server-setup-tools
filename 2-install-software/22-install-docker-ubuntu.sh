@@ -26,6 +26,6 @@ apt-get install -yy docker-ce docker-ce-cli containerd.io docker-buildx-plugin d
 logok "Установка Docker + Compose завершена
 ----------------------------------------
 $(docker -v)
-$(docke rcompose version)
+$(docker rcompose version)
 ----------------------------------------
 "

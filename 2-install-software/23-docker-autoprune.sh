@@ -8,7 +8,7 @@ checkRoot
 
 loghead "Добавление расписания для очистки Docker images"
 
-logr "Добавление расписания для автоматического обновления сертификатов и перезапуска nginx..."
+logr "Добавление ежедневного расписания..."
 FILE=/etc/cron.daily/docker-image-prune
 cat > $FILE <<EOF
 #!/bin/bash -e

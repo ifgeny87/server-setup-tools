@@ -45,7 +45,7 @@ sed -i -E "/^Port\s.*/d" /etc/ssh/sshd_config
 
 # 3. Добавляем новые правила
 cat >> /etc/ssh/sshd_config <<EOF
-
+#
 # --- Restrict SSH Access ---
 # Author: $(whoami)
 # Date: $(timestamp)
