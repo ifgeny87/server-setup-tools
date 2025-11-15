@@ -22,6 +22,7 @@ FILE=/etc/nginx/conf.d/default.conf
 logr "Создание дефолтного конфига nginx: $FILE"
 cat > $FILE <<EOF
 # Location: $FILE
+# Author: $(whoami)
 # Created: $(timestamp)
 server {
     listen 80;
@@ -46,6 +47,7 @@ logr "Добавление расписания для автоматическ�
 cat > $FILE <<EOF
 #!/bin/bash -e
 # Location: $FILE
+# Author: $(whoami)
 # Created: $(timestamp)
 certbot renew
 nginx -t

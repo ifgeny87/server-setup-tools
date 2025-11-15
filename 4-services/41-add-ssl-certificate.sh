@@ -30,6 +30,7 @@ logr "Создается шаблонный конфиг nginx для новог
 FILE=/etc/nginx/conf.d/${DOMAIN}.conf
 cat > $FILE <<EOF
 # Location: $FILE
+# Author: $(whoami)
 # Created: $(timestamp)
 server {
     set \$DOMAIN $DOAMIN;

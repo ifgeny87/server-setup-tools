@@ -21,7 +21,7 @@ loghead "Создание нового пользователя"
 
 # Создаём группу для пользвоателей SSH
 # Проверка дублируется при настройке ssh
-if ! getent group "$SSH_GROUP" >/dev/null; then
+if ! getent group "$SSH_GROUP" > /dev/null; then
     logr "Создается группа: $SSH_GROUP"
     groupadd "$SSH_GROUP"
 fi

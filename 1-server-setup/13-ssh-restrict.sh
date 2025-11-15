@@ -21,12 +21,10 @@ fi
 
 # Создаём группу для пользвоателей SSH
 # Проверка дублируется при создании пользователя
-if ! getent group "$SSH_GROUP"; then
+if ! getent group "$SSH_GROUP" > /dev/null; then
     logr "Создается группа: $SSH_GROUP"
     groupadd "$SSH_GROUP"
 fi
-
-loghead "Настройка SSH‑сервера"
 
 # 1. Бэкап конфигурации
 cp /etc/ssh/sshd_config "$SSH_CONFIG_BACKUP"
@@ -49,6 +47,8 @@ sed -i -E "/^Port\s.*/d" /etc/ssh/sshd_config
 cat >> /etc/ssh/sshd_config <<EOF
 
 # --- Restrict SSH Access ---
+# Author: $(whoami)
+# Date: $(timestamp)
 PermitRootLogin no
 PasswordAuthentication yes
 PubkeyAuthentication yes
