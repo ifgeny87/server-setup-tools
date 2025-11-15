@@ -16,9 +16,10 @@ COL_FG_GRAY="\033[37m"
 #   t - human time format 'HH:MM:SS'
 #   default - ISO format 'YYYY-mm-dd HH:MM:SS'
 function timestamp() {
-    if [[ "$1" == "h" ]]; then date +"%d.%m.%Y %H:%M:%S"
-    elif [[ "$1" == "s" ]]; then date +"%Y%m%d-%H%M%S"
-    elif [[ "$1" == "t" ]]; then date +"%H:%M:%S"
+	FORMAT=${1:}
+    if [[ "$FORMAT" == "h" ]]; then date +"%d.%m.%Y %H:%M:%S"
+    elif [[ "$FORMAT" == "s" ]]; then date +"%Y%m%d-%H%M%S"
+    elif [[ "$FORMAT" == "t" ]]; then date +"%H:%M:%S"
     else date +"%Y-%m-%d %H:%M:%S"
     fi
 }
