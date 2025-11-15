@@ -30,7 +30,7 @@ logok "SSL сертификат для домена получен"
 
 logr "Создается шаблонный конфиг nginx для нового домена"
 FILE=/etc/nginx/conf.d/${DOMAIN}.conf
-cat > $FILE << EOF
+cat > $FILE <<EOF
 # Location: $FILE
 # Created: $(timestamp)
 server {

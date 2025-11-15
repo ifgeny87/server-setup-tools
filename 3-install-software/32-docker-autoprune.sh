@@ -10,7 +10,7 @@ loghead "Добавление расписания для очистки Docker 
 
 logr "Добавление расписания для автоматического обновления сертификатов и перезапуска nginx..."
 FILE=/etc/cron.daily/docker-image-prune
-cat > $FILE << EOF
+cat > $FILE <<EOF
 #!/bin/bash -e
 # Location: $FILE
 # Created: $(timestamp)

@@ -47,7 +47,7 @@ logok "Регистрация завершена"
 
 logr "Добавление расписания для автоматического обновления сертификатов и перезапуска nginx..."
 FILE=/etc/cron.daily/certbot-renew
-cat > $FILE <<  EOF
+cat > $FILE <<EOF
 #!/bin/bash -e
 # Location: $FILE
 # Created: $(timestamp)

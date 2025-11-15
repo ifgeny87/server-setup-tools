@@ -24,12 +24,13 @@ logr "Применяем правила iptables"
 # Разрешаем уже установленные соединения
 iptables -A DOCKER-USER -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 
-# Разрешаем SSH порт HTTPS 443
+# Разрешаем порты: SSH, HTTP, HTTPS
 iptables -F INPUT
 # Разрешаем loopback
 iptables -A INPUT -i lo -j ACCEPT
 iptables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 iptables -A INPUT -p tcp --dport $SSH_PORT -j ACCEPT
+iptables -A INPUT -p tcp --dport 80 -j ACCEPT
 iptables -A INPUT -p tcp --dport 443 -j ACCEPT
 # (чтобы можно было обращаться к внешним DNS-серверам)
 iptables -A INPUT -p udp --sport 53 -j ACCEPT
@@ -57,9 +58,9 @@ netfilter-persistent save || iptables-save > /etc/iptables/rules.v4
 # Создаём systemd unit
 logr "Настраиваем автозапуск"
 
-SERVICE_FILE="/etc/systemd/system/secure-firewall.service"
+SERVICE_FILE=/etc/systemd/system/secure-firewall.service
 
-cat > "$SERVICE_FILE" <<'EOF'
+cat > $SERVICE_FILE <<EOF
 [Unit]
 Description=Secure Firewall Rules with Docker support
 After=network-online.target docker.service
