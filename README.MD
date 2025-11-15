@@ -33,8 +33,6 @@
 - mc
 - htop
 - git
-- nginx
-- certbot
 
 Запуск:
 ```shell
@@ -133,6 +131,15 @@ passwd $NEWUSERNAME
 Запуск:
 ```shell
 ./1-server-setup/15-secure-firewall.sh
+```
+
+## Разработка и развитие проекта
+
+Можно проверить работу скриптов как на выделенном сервере, так и локально.
+
+Для локальной проверки можно поднять Docker Container с образом Ubuntu:
+```shell
+docker run -it --rm ubuntu /bin/bash
 ```
 
 -------------------------------------------------------------

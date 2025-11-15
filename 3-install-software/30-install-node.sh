@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 . "$(dirname -- "$0")/_misc.sh" # load misc
 
 # Выполняет установку Node.js
@@ -7,10 +7,12 @@ set -e
 
 checkRoot
 
-loghead "Установка Node.js"
+VERSION=${VERSION:22}
+
+loghead "Установка Node.js версии $VERSION}"
 
 logr "Настройка пакетов..."
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_${VERSION}.x | sudo -E bash -
 
 logr "Установка..."
 apt-get install -yy nodejs
