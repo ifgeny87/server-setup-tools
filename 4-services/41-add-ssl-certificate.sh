@@ -33,11 +33,8 @@ cat > $FILE <<EOF
 # Author: $(whoami)
 # Created: $(timestamp)
 server {
-    set \$DOMAIN $DOMAIN;
-    set \$ENTRYPOINT 127.0.0.1:8080;
-
     listen 443 ssl;
-    server_name \$DOAMIN;
+    server_name $DOMAIN;
 
     ssl_session_cache         shared:SSL:10m;
     ssl_session_timeout       10m; # default 5m
@@ -79,7 +76,7 @@ server {
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Request \$uri;
         proxy_set_header X-Result-All \$uri\$is_args\$args;
-        proxy_pass       http://\$ENTRYPOINT;
+        proxy_pass       http://127.0.0.1:8080;
     }
 }
 EOF
