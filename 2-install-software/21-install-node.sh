@@ -7,7 +7,7 @@ set -euo pipefail
 
 checkRoot
 
-VERSION=${VERSION:-22}
+VERSION=${VERSION:-25}
 
 loghead "Установка Node.js версии ${VERSION}"
 

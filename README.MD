@@ -177,7 +177,7 @@ sudo reboot
 
 ### 21-install-node.sh
 
-### 22-install-docker-(debian|ubuntu).sh (2 версии)
+### 22-install-docker-(debian or ubuntu).sh (2 версии)
 
 ### 23-docker-autoprune.sh
 
