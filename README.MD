@@ -3,6 +3,18 @@
 * Repo: https://github.com/ifgeny87/server-setup-tools
 * Version: 1.0.0
 
+## Using steps
+
+Чтобы начать использовать инструмент, достаточно выполнить следующие шаги:
+
+```shell
+# Установка git
+apt-get update -y; apt-get install -y git
+# Скачивание репозитория
+cd /opt
+git clone https://github.com/ifgeny87/server-setup-tools
+```
+
 ## Description
 
 Репозиторий содержит набор скриптов для очистки и настройки новых серверов.
@@ -20,18 +32,6 @@
 - **2-user-setup** - скрипты для конфигурации пользовательского окружения
 - **3-install-software** - скрипты упрощают установку ПО
 - **4-services** - набор инструментов для обслуживания серверов
-
-## Using steps
-
-Чтобы начать использовать инструмент, достаточно выполнить следующие шаги:
-
-```shell
-# установка git
-apt-get update -y; apt-get install -y git
-# скачивание репозитория
-cd /opt
-git clone https://github.com/ifgeny87/server-setup-tools
-```
 
 ## Разработка и развитие проекта
 
