@@ -580,7 +580,7 @@ details.ticket > summary .status { margin-left: auto; }
       <a href="#SRV-033"><i class="ball ball-ready"></i><span class="menu-id">SRV-033</span><span class="menu-title">Node LTS и загрузчики с фиксированной ревизией</span></a>
       <a href="#SRV-034"><i class="ball ball-ready"></i><span class="menu-id">SRV-034</span><span class="menu-title">Проверка бана и лимита лога на ВМ</span></a>
       <p class="menu-phase">8. Аудит сервера</p>
-      <a href="#SRV-035"><i class="ball ball-ready"></i><span class="menu-id">SRV-035</span><span class="menu-title">Скрипт проверки безопасности сервера</span></a>
+      <a href="#SRV-035"><i class="ball ball-done"></i><span class="menu-id">SRV-035</span><span class="menu-title">Скрипт проверки безопасности сервера</span></a>
       </div>
       <p class="menu-composed">📅 Проект открыт 06.11.2025</p>
     </nav>
@@ -588,7 +588,7 @@ details.ticket > summary .status { margin-left: auto; }
       <main class="wrap">
         <section class="how" id="how-to-read">
           <h2>Как читать</h2>
-          <p>План идёт сверху вниз, номера совпадают с порядком работы. Описание тикета свёрнуто и открывается по заголовку. Зелёный шарик — выполнено. Жёлтый — задачу можно делать, отдельного статуса «в работе» нет. Красный — задачу блокируют другие. В меню текущий пункт жирный, уже пройденные светлее. Следующий шаг — <a href="#SRV-031">SRV-031</a>. <a href="#SRV-032">SRV-032</a>, <a href="#SRV-033">SRV-033</a> и <a href="#SRV-035">SRV-035</a> можно делать параллельно. Проверка бана — <a href="#SRV-034">SRV-034</a>, ей нужна ВМ.</p>
+          <p>План идёт сверху вниз, номера совпадают с порядком работы. Описание тикета свёрнуто и открывается по заголовку. Зелёный шарик — выполнено. Жёлтый — задачу можно делать, отдельного статуса «в работе» нет. Красный — задачу блокируют другие. В меню текущий пункт жирный, уже пройденные светлее. Следующий шаг — <a href="#SRV-031">SRV-031</a>. <a href="#SRV-032">SRV-032</a> и <a href="#SRV-033">SRV-033</a> можно делать параллельно. Проверка бана — <a href="#SRV-034">SRV-034</a>, ей нужна ВМ.</p>
           <p class="how-counts">
             <span><i class="ball ball-done"></i>Выполнено <b data-count="done">0</b></span>
             <span><i class="ball ball-ready"></i>Можно делать <b data-count="ready">0</b></span>
@@ -2236,12 +2236,12 @@ iptables -A FORWARD -p tcp -d "$SERVER_IP" --dport "$SERVER_SSH_PORT" \
     </section>
     <h2>8. Аудит сервера</h2>
     <section class="ticket-list">
-      <details class="ticket" id="SRV-035" data-status="ready">
+      <details class="ticket" id="SRV-035" data-status="done">
         <summary>
-          <i class="ball ball-ready"></i>
+          <i class="ball ball-done"></i>
           <span class="id">SRV-035</span>
           <span class="ticket-title">Скрипт проверки безопасности сервера</span>
-          <span class="status">Можно делать</span>
+          <span class="status">Выполнено</span>
         </summary>
         <div class="ticket-body">
 <p class="meta">
@@ -2350,6 +2350,7 @@ iptables -A FORWARD -p tcp -d "$SERVER_IP" --dport "$SERVER_SSH_PORT" \
       <li>Запуск без <code>--fix</code> не создаёт <code>99-sst-audit.conf</code>, не вызывает скрипты 11, 13, 14, 15 и 23.</li>
       <li>В README есть раздел этого скрипта. В пресетах батча его нет.</li>
     </ul>
+    <div class="note note-ok">На фикстурах <code>ss</code>, <code>df</code> и <code>iptables</code> отчёт дал сильную сторону, предупреждение и критичное. <code>--help</code> вышел до проверок. <code>--fix AUD-ENV-MODE</code> привёл файл с режимом 640 к 600 и повторно его не трогал. Живой VPS не использовался.</div>
         </div>
       </details>
     </section>
