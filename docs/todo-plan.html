@@ -565,7 +565,7 @@ details.ticket > summary .status { margin-left: auto; }
       <a href="#SRV-020"><i class="ball ball-done"></i><span class="menu-id">SRV-020</span><span class="menu-title">Батч-скрипт: выбор, вопросы, стоп на ошибке</span></a>
       <a href="#SRV-021"><i class="ball ball-done"></i><span class="menu-id">SRV-021</span><span class="menu-title">Пресеты для запуска без участия пользователя</span></a>
       <a href="#SRV-022"><i class="ball ball-ready"></i><span class="menu-id">SRV-022</span><span class="menu-title">Подробно описать в README работу каждого скрипта</span></a>
-      <a href="#SRV-023"><i class="ball ball-ready"></i><span class="menu-id">SRV-023</span><span class="menu-title">Интерактивное управление форвардом iptables</span></a>
+      <a href="#SRV-023"><i class="ball ball-done"></i><span class="menu-id">SRV-023</span><span class="menu-title">Интерактивное управление форвардом iptables</span></a>
       <a href="#SRV-024"><i class="ball ball-done"></i><span class="menu-id">SRV-024</span><span class="menu-title">Кастомные страницы ошибок nginx</span></a>
       <a href="#SRV-025"><i class="ball ball-ready"></i><span class="menu-id">SRV-025</span><span class="menu-title">Страницы ошибок не ломают штатный nginx</span></a>
       <a href="#SRV-026"><i class="ball ball-ready"></i><span class="menu-id">SRV-026</span><span class="menu-title">Снять кастомные страницы ошибок nginx</span></a>
@@ -576,7 +576,7 @@ details.ticket > summary .status { margin-left: auto; }
       <main class="wrap">
         <section class="how" id="how-to-read">
           <h2>Как читать</h2>
-          <p>План идёт сверху вниз, номера совпадают с порядком работы. Описание тикета свёрнуто и открывается по заголовку. Зелёный шарик — выполнено. Жёлтый — задачу можно делать, отдельного статуса «в работе» нет. Красный — задачу блокируют другие. В меню текущий пункт жирный, уже пройденные светлее. Следующий шаг — <a href="#SRV-022">SRV-022</a>. <a href="#SRV-023">SRV-023</a> можно делать параллельно после <a href="#SRV-008">SRV-008</a>. <a href="#SRV-025">SRV-025</a> и <a href="#SRV-026">SRV-026</a> можно делать сейчас: они опираются на уже сделанный <a href="#SRV-024">SRV-024</a>.</p>
+          <p>План идёт сверху вниз, номера совпадают с порядком работы. Описание тикета свёрнуто и открывается по заголовку. Зелёный шарик — выполнено. Жёлтый — задачу можно делать, отдельного статуса «в работе» нет. Красный — задачу блокируют другие. В меню текущий пункт жирный, уже пройденные светлее. Следующий шаг — <a href="#SRV-022">SRV-022</a>. <a href="#SRV-025">SRV-025</a> и <a href="#SRV-026">SRV-026</a> можно делать сейчас: они опираются на уже сделанный <a href="#SRV-024">SRV-024</a>.</p>
           <p class="how-counts">
             <span><i class="ball ball-done"></i>Выполнено <b data-count="done">0</b></span>
             <span><i class="ball ball-ready"></i>Можно делать <b data-count="ready">0</b></span>
@@ -1715,12 +1715,12 @@ STEP 4-services/43-nginx-error-pages.sh</code></pre>
     </ul>
         </div>
       </details>
-      <details class="ticket" id="SRV-023" data-status="ready">
+      <details class="ticket" id="SRV-023" data-status="done">
         <summary>
-          <i class="ball ball-ready"></i>
+          <i class="ball ball-done"></i>
           <span class="id">SRV-023</span>
           <span class="ticket-title">Интерактивное управление форвардом iptables</span>
-          <span class="status">Можно делать</span>
+          <span class="status">Выполнено</span>
         </summary>
         <div class="ticket-body">
 <p class="meta">
@@ -1740,13 +1740,13 @@ STEP 4-services/43-nginx-error-pages.sh</code></pre>
         <tr><th>Код</th><th>Статус</th><th>Пункт</th></tr>
       </thead>
       <tbody>
-        <tr><td>SRV-023-1</td><td><span class="status"><i class="ball ball-ready"></i>Можно делать</span></td><td>Каркас, root, печать путей при старте</td></tr>
-        <tr><td>SRV-023-2</td><td><span class="status"><i class="ball ball-ready"></i>Можно делать</span></td><td>Меню: стрелки и Enter, либо одна цифра</td></tr>
-        <tr><td>SRV-023-3</td><td><span class="status"><i class="ball ball-ready"></i>Можно делать</span></td><td>Добавление шести полей и правила без дублей</td></tr>
-        <tr><td>SRV-023-4</td><td><span class="status"><i class="ball ball-ready"></i>Можно делать</span></td><td>Удаление выбранной записи из iptables и из конфига</td></tr>
-        <tr><td>SRV-023-5</td><td><span class="status"><i class="ball ball-ready"></i>Можно делать</span></td><td>Список: конфиг, живой iptables, файл для ребута</td></tr>
-        <tr><td>SRV-023-6</td><td><span class="status"><i class="ball ball-ready"></i>Можно делать</span></td><td>Сохранить текущий iptables</td></tr>
-        <tr><td>SRV-023-7</td><td><span class="status"><i class="ball ball-ready"></i>Можно делать</span></td><td>Загрузить сохранённый iptables, заменив текущий</td></tr>
+        <tr><td>SRV-023-1</td><td><span class="status"><i class="ball ball-done"></i>Выполнено</span></td><td>Каркас, root, печать путей при старте</td></tr>
+        <tr><td>SRV-023-2</td><td><span class="status"><i class="ball ball-done"></i>Выполнено</span></td><td>Меню: стрелки и Enter, либо одна цифра</td></tr>
+        <tr><td>SRV-023-3</td><td><span class="status"><i class="ball ball-done"></i>Выполнено</span></td><td>Добавление шести полей и правила без дублей</td></tr>
+        <tr><td>SRV-023-4</td><td><span class="status"><i class="ball ball-done"></i>Выполнено</span></td><td>Удаление выбранной записи из iptables и из конфига</td></tr>
+        <tr><td>SRV-023-5</td><td><span class="status"><i class="ball ball-done"></i>Выполнено</span></td><td>Список: конфиг, живой iptables, файл для ребута</td></tr>
+        <tr><td>SRV-023-6</td><td><span class="status"><i class="ball ball-done"></i>Выполнено</span></td><td>Сохранить текущий iptables</td></tr>
+        <tr><td>SRV-023-7</td><td><span class="status"><i class="ball ball-done"></i>Выполнено</span></td><td>Загрузить сохранённый iptables, заменив текущий</td></tr>
       </tbody>
     </table>
 
@@ -1851,6 +1851,7 @@ iptables -A FORWARD -p tcp -d "$SERVER_IP" --dport "$SERVER_SSH_PORT" \
       <li>Удаление снимает правила, убирает строку конфига и не оставляет копий. Снимок меняется только отдельным сохранением.</li>
       <li>Загрузка подменяет текущие правила файлом. Отказ ответить <code>yes</code> не вызывает <code>iptables-restore</code>.</li>
     </ul>
+    <div class="note note-ok">Меню, повторное добавление, список, удаление, сохранение и отказ от загрузки проверены на заглушке iptables. Живой iptables на этой машине не запускался. Удалённый номер не выдаётся снова: в конфиге остаётся комментарий <code># last_id</code>.</div>
         </div>
       </details>
       <details class="ticket" id="SRV-024" data-status="done">
