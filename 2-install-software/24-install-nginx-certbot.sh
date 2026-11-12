@@ -24,18 +24,31 @@ cat > $FILE <<EOF
 # Location: $FILE
 # Author: $(whoami)
 # Created: $(timestamp)
+
+#
+# Redirect all requests from http to https
+#
 server {
     listen 80;
 
-    # enable ACME challenge for SSL certs
-    #location /.well-known/acme-challenge/ {
-    #    root /var/www/acme;
-    #}
-
-    # redirect from http to https
     location / {
-        return 301 https://\$host\$request_uri;
+        return 301 https://$host$request_uri;
     }
+}
+
+#
+# Locking requests to unknown domains
+#
+server {
+    listen 443 ssl http2 default_server;
+    listen [::]:443 ssl http2 default_server;
+
+    ssl_ciphers aNULL;
+    set $empty "";
+    ssl_certificate data:$empty;
+    ssl_certificate_key data:$empty;
+
+    return 404;
 }
 EOF
 
