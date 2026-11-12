@@ -44,6 +44,7 @@ server {
 
     ssl_certificate     /etc/nginx/ssl/default-reject.crt;
     ssl_certificate_key /etc/nginx/ssl/default-reject.key;
+    ssl_protocols       TLSv1.2 TLSv1.3;
 
     return 404;
 }

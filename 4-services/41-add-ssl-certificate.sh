@@ -16,8 +16,8 @@ if [ -z "$DOMAIN" ]; then
         read -r -p "Введите один домен: " DOMAIN
     fi
 fi
-if [ -z "$DOMAIN" ] || [[ "$DOMAIN" == */* ]]; then
-    logerr "Название домена не может быть пустым"
+if ! [[ "$DOMAIN" =~ ^[A-Za-z0-9.-]+$ ]]; then
+    logerr "Домен должен состоять из букв, цифр, точки и дефиса"
     exit 1
 fi
 
@@ -48,11 +48,11 @@ server {
 
     ssl_session_cache         shared:SSL:10m;
     ssl_session_timeout       10m; # default 5m
-    ssl_prefer_server_ciphers on;
+    ssl_prefer_server_ciphers off;
     ssl_certificate           /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
     ssl_certificate_key       /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
     ssl_protocols             TLSv1.2 TLSv1.3;
-    ssl_ciphers               RC4:HIGH:!aNULL:!MD5:!kEDH;
+    ssl_ciphers               ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
 
     fastcgi_read_timeout  30;
     proxy_connect_timeout 30;

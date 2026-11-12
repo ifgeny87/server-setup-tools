@@ -318,8 +318,13 @@ ask_value() {
     done
 }
 
+# Пишет sysctl только когда FORWARD уже DROP. Иначе хост маршрутизирует чужой трафик.
 enable_forward_if_needed() {
     local current
+    if ! iptables -S 2>/dev/null | grep -qx -- '-P FORWARD DROP'; then
+        logerr "Политика FORWARD не DROP. Сначала выполните 1-server-setup/15-secure-firewall.sh"
+        return 1
+    fi
     current=$(sysctl -n net.ipv4.ip_forward 2>/dev/null || echo 0)
     if [ "$current" != "0" ]; then
         return 0

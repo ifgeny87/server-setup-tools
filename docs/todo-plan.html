@@ -497,7 +497,7 @@ details.ticket > summary .status { margin-left: auto; }
   <div class="settings" id="settings">
     <div class="settings-brand">
       <strong>todo-plan.html</strong>
-      <span>Пошаговый план реализации. Тикеты SRV-001 … SRV-026 идут по порядку выполнения.</span>
+      <span>Пошаговый план реализации. Тикеты SRV-001 … SRV-035 идут по порядку выполнения.</span>
     </div>
     <div class="settings-tools">
     <div class="theme-switch" role="group" aria-label="Тема">
@@ -569,6 +569,18 @@ details.ticket > summary .status { margin-left: auto; }
       <a href="#SRV-024"><i class="ball ball-done"></i><span class="menu-id">SRV-024</span><span class="menu-title">Кастомные страницы ошибок nginx</span></a>
       <a href="#SRV-025"><i class="ball ball-done"></i><span class="menu-id">SRV-025</span><span class="menu-title">Страницы ошибок не ломают штатный nginx</span></a>
       <a href="#SRV-026"><i class="ball ball-done"></i><span class="menu-id">SRV-026</span><span class="menu-title">Снять кастомные страницы ошибок nginx</span></a>
+      <p class="menu-phase">6. Безопасность</p>
+      <a href="#SRV-027"><i class="ball ball-done"></i><span class="menu-id">SRV-027</span><span class="menu-title">Закрыть вход по IPv6 тем же файрволом</span></a>
+      <a href="#SRV-028"><i class="ball ball-done"></i><span class="menu-id">SRV-028</span><span class="menu-title">Убрать приём пакетов с source-port 53</span></a>
+      <a href="#SRV-029"><i class="ball ball-done"></i><span class="menu-id">SRV-029</span><span class="menu-title">Убрать RC4 и ограничить имя домена</span></a>
+      <a href="#SRV-030"><i class="ball ball-done"></i><span class="menu-id">SRV-030</span><span class="menu-title">Не маршрутизировать весь трафик при форварде</span></a>
+      <p class="menu-phase">7. Проверки и версии</p>
+      <a href="#SRV-031"><i class="ball ball-ready"></i><span class="menu-id">SRV-031</span><span class="menu-title">Регрессия без root и без Docker</span></a>
+      <a href="#SRV-032"><i class="ball ball-ready"></i><span class="menu-id">SRV-032</span><span class="menu-title">Прогон в контейнерах Ubuntu и Debian</span></a>
+      <a href="#SRV-033"><i class="ball ball-ready"></i><span class="menu-id">SRV-033</span><span class="menu-title">Node LTS и загрузчики с фиксированной ревизией</span></a>
+      <a href="#SRV-034"><i class="ball ball-ready"></i><span class="menu-id">SRV-034</span><span class="menu-title">Проверка бана и лимита лога на ВМ</span></a>
+      <p class="menu-phase">8. Аудит сервера</p>
+      <a href="#SRV-035"><i class="ball ball-ready"></i><span class="menu-id">SRV-035</span><span class="menu-title">Скрипт проверки безопасности сервера</span></a>
       </div>
       <p class="menu-composed">📅 Проект открыт 06.11.2025</p>
     </nav>
@@ -576,7 +588,7 @@ details.ticket > summary .status { margin-left: auto; }
       <main class="wrap">
         <section class="how" id="how-to-read">
           <h2>Как читать</h2>
-          <p>План идёт сверху вниз, номера совпадают с порядком работы. Описание тикета свёрнуто и открывается по заголовку. Зелёный шарик — выполнено. Жёлтый — задачу можно делать, отдельного статуса «в работе» нет. Красный — задачу блокируют другие. В меню текущий пункт жирный, уже пройденные светлее. Все тикеты плана выполнены.</p>
+          <p>План идёт сверху вниз, номера совпадают с порядком работы. Описание тикета свёрнуто и открывается по заголовку. Зелёный шарик — выполнено. Жёлтый — задачу можно делать, отдельного статуса «в работе» нет. Красный — задачу блокируют другие. В меню текущий пункт жирный, уже пройденные светлее. Следующий шаг — <a href="#SRV-031">SRV-031</a>. <a href="#SRV-032">SRV-032</a>, <a href="#SRV-033">SRV-033</a> и <a href="#SRV-035">SRV-035</a> можно делать параллельно. Проверка бана — <a href="#SRV-034">SRV-034</a>, ей нужна ВМ.</p>
           <p class="how-counts">
             <span><i class="ball ball-done"></i>Выполнено <b data-count="done">0</b></span>
             <span><i class="ball ball-ready"></i>Можно делать <b data-count="ready">0</b></span>
@@ -1975,6 +1987,369 @@ iptables -A FORWARD -p tcp -d "$SERVER_IP" --dport "$SERVER_SSH_PORT" \
       <li>Сертификат <code>default-reject</code> и другие сниппеты на месте.</li>
     </ul>
     <div class="note note-ok">Пустая заглушка не считается установкой. Снятие include, сниппета и страницы, повторный запуск, откат сломанного конфига и сохранение чужого сниппета с <code>default-reject</code> проверены на временных файлах. Живой nginx здесь не запускался. В пресет <code>unattended-web</code> скрипт не входит.</div>
+        </div>
+      </details>
+    </section>
+    <h2>6. Безопасность</h2>
+    <section class="ticket-list">
+      <details class="ticket" id="SRV-027" data-status="done">
+        <summary>
+          <i class="ball ball-done"></i>
+          <span class="id">SRV-027</span>
+          <span class="ticket-title">Закрыть вход по IPv6 тем же файрволом</span>
+          <span class="status">Выполнено</span>
+        </summary>
+        <div class="ticket-body">
+<p class="meta">
+      <span class="tag">безопасность</span>
+      <span>правка <code>1-server-setup/15-secure-firewall.sh</code></span>
+      <span>после <a href="#SRV-008">SRV-008</a></span>
+    </p>
+    <h2>Зачем</h2>
+    <p>Скрипт 15 ставит политику INPUT DROP только в <code>iptables</code>. Если у VPS есть адрес IPv6, а политика <code>ip6tables</code> INPUT остаётся ACCEPT, порты открыты мимо <code>SSH_PORT</code>, fail2ban и строки <code>FIREWALL DROP</code>.</p>
+    <h2>Что сделать</h2>
+    <ol>
+      <li>Собрать для <code>ip6tables</code> ту же схему filter: <code>lo</code>, RELATED,ESTABLISHED, tcp <code>SSH_PORT</code>, tcp 80, tcp 443, нужный ICMPv6, лог с тем же лимитом и префиксом, затем DROP.</li>
+      <li>Отдельное правило source-port 53 в IPv6 не добавлять.</li>
+      <li>Сохранять набор в <code>/etc/iptables/rules.v6</code> и восстанавливать его при загрузке рядом с <code>rules.v4</code>.</li>
+      <li>Если IPv6 в ядре выключен, не падать: одна строка в лог и обычное завершение IPv4-части.</li>
+    </ol>
+    <h2>Готово, когда</h2>
+    <ul>
+      <li>При включённом IPv6 снаружи видны только разрешённые порты.</li>
+      <li>Повторный запуск не копирует правила.</li>
+      <li>Хост без IPv6 проходит скрипт 15 с кодом 0.</li>
+    </ul>
+    <div class="note note-ok">Сборка применена в сетевом пространстве контейнера Ubuntu 24.04: политика INPUT DROP, ICMP типов 1–4 и 133–136, echo request не открыт. Повторный ip6tables-save совпал со сборкой. На этой машине ядро без IPv6, полный скрипт 15 со systemd не запускался.</div>
+        </div>
+      </details>
+      <details class="ticket" id="SRV-028" data-status="done">
+        <summary>
+          <i class="ball ball-done"></i>
+          <span class="id">SRV-028</span>
+          <span class="ticket-title">Убрать приём пакетов с source-port 53</span>
+          <span class="status">Выполнено</span>
+        </summary>
+        <div class="ticket-body">
+<p class="meta">
+      <span class="tag">безопасность</span>
+      <span>правка <code>1-server-setup/15-secure-firewall.sh</code></span>
+      <span>после <a href="#SRV-008">SRV-008</a></span>
+    </p>
+    <h2>Зачем</h2>
+    <p>В INPUT уже есть ACCEPT для RELATED,ESTABLISHED. Следом скрипт принимает любой новый tcp и udp с source-port 53. Такой пакет обходит DROP. Ответы DNS и так проходят как established.</p>
+    <h2>Что сделать</h2>
+    <ol>
+      <li>Убрать из собираемого INPUT оба правила <code>--sport 53</code>.</li>
+      <li>Исходящие <code>--dport 53</code> в OUTPUT оставить.</li>
+      <li>Повторная сборка filter не должна вернуть source-port 53.</li>
+    </ol>
+    <h2>Готово, когда</h2>
+    <ul>
+      <li><code>iptables -S INPUT</code> не содержит <code>--sport 53</code>.</li>
+      <li>Резолв имён с самого сервера работает.</li>
+      <li>Второй запуск скрипта 15 не добавляет эти правила снова.</li>
+    </ul>
+    <div class="note note-ok">В том же контейнере <code>iptables -S INPUT</code> без <code>--sport 53</code>, исходящий <code>--dport 53</code> на месте. Второй проход сборки правило не возвращает. Резолв имён с боевого сервера не проверялся.</div>
+        </div>
+      </details>
+      <details class="ticket" id="SRV-029" data-status="done">
+        <summary>
+          <i class="ball ball-done"></i>
+          <span class="id">SRV-029</span>
+          <span class="ticket-title">Убрать RC4 и ограничить имя домена</span>
+          <span class="status">Выполнено</span>
+        </summary>
+        <div class="ticket-body">
+<p class="meta">
+      <span class="tag">безопасность</span>
+      <span>правка <code>4-services/41-add-ssl-certificate.sh</code> и <code>2-install-software/24-install-nginx-certbot.sh</code></span>
+    </p>
+    <h2>Зачем</h2>
+    <p>Шаблон 41 задаёт <code>ssl_ciphers RC4:HIGH:!aNULL:!MD5:!kEDH</code> и <code>ssl_prefer_server_ciphers on</code>. На TLS 1.2 сервер может выбрать RC4. У default-сервера скрипта 24 протоколы не заданы: nginx 1.18 на Ubuntu 22 оставляет TLS 1.0 и 1.1. <code>DOMAIN</code> проверяется только на пустоту и слэш и подставляется в конфиг как есть.</p>
+    <h2>Что сделать</h2>
+    <ol>
+      <li>В шаблоне 41 оставить протоколы TLSv1.2 и TLSv1.3. Список шифров собрать без RC4, MD5 и экспортных. <code>ssl_prefer_server_ciphers</code> выключить.</li>
+      <li>В default-сервер скрипта 24 добавить <code>ssl_protocols TLSv1.2 TLSv1.3</code>. Строку <code>listen 443 ssl http2</code> не менять: на nginx 1.18 директива <code>http2 on</code> не принимается.</li>
+      <li><code>DOMAIN</code> принимать только из букв, цифр, точки и дефиса. Иначе <code>[ERROR]</code> до certbot и до записи файла.</li>
+    </ol>
+    <h2>Готово, когда</h2>
+    <ul>
+      <li>В репозитории нет строки <code>RC4</code>.</li>
+      <li><code>nginx -t</code> принимает оба шаблона на фикстуре.</li>
+      <li>Значения <code>a;b</code> и <code>a b</code> в <code>DOMAIN</code> отвергаются.</li>
+    </ul>
+    <div class="note note-ok"><code>a;b</code> и <code>a b</code> не проходят проверку до certbot. nginx 1.27.3 принял оба шаблона через <code>nginx -t</code>. Уже записанный конфиг домена без <code>FORCE_NGINX=1</code> сам не обновится.</div>
+        </div>
+      </details>
+      <details class="ticket" id="SRV-030" data-status="done">
+        <summary>
+          <i class="ball ball-done"></i>
+          <span class="id">SRV-030</span>
+          <span class="ticket-title">Не маршрутизировать весь трафик при форварде</span>
+          <span class="status">Выполнено</span>
+        </summary>
+        <div class="ticket-body">
+<p class="meta">
+      <span class="tag">безопасность</span>
+      <span>правка <code>1-server-setup/15-secure-firewall.sh</code> и <code>4-services/42-manage-forward.sh</code></span>
+      <span>после <a href="#SRV-023">SRV-023</a></span>
+    </p>
+    <h2>Зачем</h2>
+    <p>Скрипт 42 при выключенной пересылке пишет <code>net.ipv4.ip_forward=1</code>. Скрипт 15 не меняет политику FORWARD. На Ubuntu она ACCEPT, поэтому после включения пересылки хост маршрутизирует чужой трафик, не только шесть правил проброса и <code>docker0</code>.</p>
+    <h2>Что сделать</h2>
+    <ol>
+      <li>В сборке filter скрипта 15 выставить политику FORWARD в DROP и сохранить это в <code>rules.v4</code>.</li>
+      <li>Явные ACCEPT для <code>docker0</code> и правила <code>sst-fwd-</code> не удалять.</li>
+      <li>Скрипт 42 не включает <code>ip_forward</code>, пока политика FORWARD не DROP.</li>
+      <li>В README одна фраза: форвард включается только вместе с DROP на FORWARD.</li>
+    </ol>
+    <h2>Готово, когда</h2>
+    <ul>
+      <li>После скрипта 15 политика FORWARD — DROP.</li>
+      <li>При наличии <code>docker0</code> его ACCEPT на месте.</li>
+      <li>Пока политика не DROP, скрипт 42 не пишет sysctl-файл.</li>
+      <li>Повтор скрипта 15 не возвращает FORWARD в ACCEPT.</li>
+    </ul>
+    <div class="note note-ok">В контейнере политика FORWARD — DROP, ACCEPT для <code>docker0</code> и правило <code>sst-fwd-</code> на месте. Повтор сборки ACCEPT не возвращает. Пока политика ACCEPT, скрипт 42 sysctl-файл не пишет. Живой sysctl этой машины не менялся.</div>
+        </div>
+      </details>
+    </section>
+    <h2>7. Проверки и версии</h2>
+    <section class="ticket-list">
+      <details class="ticket" id="SRV-031" data-status="ready">
+        <summary>
+          <i class="ball ball-ready"></i>
+          <span class="id">SRV-031</span>
+          <span class="ticket-title">Регрессия без root и без Docker</span>
+          <span class="status">Можно делать</span>
+        </summary>
+        <div class="ticket-body">
+<p class="meta">
+      <span class="tag">тесты</span>
+      <span>новый каталог <code>tests/</code></span>
+    </p>
+    <h2>Зачем</h2>
+    <p>Проверки SRV-019 … SRV-026 гонялись вручную и в репозиторий не легли. Следующая правка легко ломает пресет, форвард и страницы ошибок. Эти проверки не требуют демона и проходят на Mac.</p>
+    <h2>Что сделать</h2>
+    <ol>
+      <li>Одна команда <code>bash tests/run.sh</code>. Без root, без Docker, без сети. Заглушки команд, не боевые <code>apt</code>, <code>sshd</code> и <code>iptables</code>.</li>
+      <li>Пресеты: <code>--list</code>, нехватка переменной у <code>unattended-server</code> до скрипта 10, остановка очереди на первой ошибке.</li>
+      <li>Форвард на заглушке: повтор шестёрки не плодит правила, ответ не <code>yes</code> не вызывает <code>iptables-restore</code>.</li>
+      <li>Страницы 43 и 44: чужой <code>error_page</code> не меняется, неудачный <code>nginx -t</code> возвращает файлы, пустая заглушка для 44 — не установка.</li>
+      <li>Повтор блока <code>sst</code> не переписывает файл, если байты те же.</li>
+    </ol>
+    <h2>Готово, когда</h2>
+    <ul>
+      <li><code>bash tests/run.sh</code> на этой машине заканчивается кодом 0.</li>
+      <li>В git нет ключей и нет копий <code>/etc</code>.</li>
+    </ul>
+        </div>
+      </details>
+      <details class="ticket" id="SRV-032" data-status="ready">
+        <summary>
+          <i class="ball ball-ready"></i>
+          <span class="id">SRV-032</span>
+          <span class="ticket-title">Прогон в контейнерах Ubuntu и Debian</span>
+          <span class="status">Можно делать</span>
+        </summary>
+        <div class="ticket-body">
+<p class="meta">
+      <span class="tag">тесты</span>
+      <span>после <a href="#SRV-031">SRV-031</a></span>
+    </p>
+    <h2>Зачем</h2>
+    <p>Живой прогон на Ubuntu в тикетах 018, 019 и 024 не делался. Обычный <code>docker run ubuntu</code> не заменяет ВМ: в образе нет systemd, поэтому <code>systemctl</code> в скриптах 13, 14, 15 и 40 сразу нерабочий.</p>
+    <h2>Что сделать</h2>
+    <ol>
+      <li>Образы <code>ubuntu:22.04</code>, <code>ubuntu:24.04</code>, <code>debian:12</code>, <code>debian:13</code>. Репозиторий смонтировать внутрь и выполнить там <code>bash tests/run.sh</code>.</li>
+      <li>Этот обязательный прогон без <code>--privileged</code> и без systemd.</li>
+      <li>Установку Docker скриптом 22 в этот прогон не включать. Это Docker внутри Docker: нужен <code>--privileged</code> и ядро Linux. На Mac демон Docker Desktop уже живёт в своей Linux-ВМ, вложенный dockerd там не считать проверкой. Второй уровень dind не поднимать. Если скрипт 22 понадобится отдельно, это один job на Linux-раннере с одним <code>--privileged</code>.</li>
+      <li><code>iptables</code> в контейнере проверять только с <code>--cap-add NET_ADMIN</code> и только на фикстуре из SRV-031, не полным скриптом 15: тот зовёт <code>systemctl</code>.</li>
+      <li>Полный прогон 13–15 со sshd оставить ВМ из <a href="#SRV-034">SRV-034</a>. Контейнер с systemd как PID 1 на Mac не делать обязательным.</li>
+    </ol>
+    <h2>Готово, когда</h2>
+    <ul>
+      <li>Четыре образа заканчивают <code>bash tests/run.sh</code> с кодом 0.</li>
+      <li>В инструкции к прогону написано, что установка Docker и systemd в этот контур не входят.</li>
+    </ul>
+        </div>
+      </details>
+      <details class="ticket" id="SRV-033" data-status="ready">
+        <summary>
+          <i class="ball ball-ready"></i>
+          <span class="id">SRV-033</span>
+          <span class="ticket-title">Node LTS и загрузчики с фиксированной ревизией</span>
+          <span class="status">Можно делать</span>
+        </summary>
+        <div class="ticket-body">
+<p class="meta">
+      <span class="tag">версии</span>
+      <span>правка <code>21-install-node.sh</code>, <code>20-install-oh-my-zsh.sh</code>, скриптов Docker и <code>40-firewall-monitor.sh</code></span>
+    </p>
+    <h2>Зачем</h2>
+    <p><code>21-install-node.sh</code> по умолчанию ставит Node 25. На ноябрь 2026 линия 25 снята с поддержки, активный LTS — 26. Скрипт 20 качает oh-my-zsh с <code>master</code> и сразу выполняет. Скрипт 21 так же выполняет скрипт NodeSource. Скрипт 40 включает таймер, даже если <code>/root/.env</code> читается не только root. Отдельный сканер CVE и pin всех пакетов apt этому набору не нужен: версии из Ubuntu ставятся именами.</p>
+    <h2>Что сделать</h2>
+    <ol>
+      <li>Значение по умолчанию <code>VERSION=26</code>. В комментарии и README указать, что 25 не ставить. Линии 22 и 24 оставлять допустимыми, пока у них есть поддержка.</li>
+      <li>oh-my-zsh ставить с записанного в скрипт тега, не с <code>master</code>. Файл установщика скачать, затем запустить. Поток <code>curl | sh</code> убрать.</li>
+      <li>Ключ Docker сверять с отпечатком из документации Docker до <code>apt-get update</code> из этого источника. Отпечаток записать рядом с загрузкой в ubuntu- и debian-скриптах.</li>
+      <li>В скрипте 40: если <code>/root/.env</code> есть и режим шире <code>600</code>, <code>[ERROR]</code> и таймер не включать.</li>
+    </ol>
+    <h2>Готово, когда</h2>
+    <ul>
+      <li>Запуск без <code>VERSION</code> запрашивает репозиторий Node 26.</li>
+      <li>В скрипте 20 нет <code>master</code> и нет <code>curl | sh</code>.</li>
+      <li>Таймер монитора не стартует, если файл секретов доступен группе или остальным.</li>
+    </ul>
+        </div>
+      </details>
+      <details class="ticket" id="SRV-034" data-status="ready">
+        <summary>
+          <i class="ball ball-ready"></i>
+          <span class="id">SRV-034</span>
+          <span class="ticket-title">Проверка бана и лимита лога на ВМ</span>
+          <span class="status">Можно делать</span>
+        </summary>
+        <div class="ticket-body">
+<p class="meta">
+      <span class="tag">тесты</span>
+      <span>нужна ВМ Ubuntu 24.04 со sshd и systemd</span>
+      <span>контейнер из <a href="#SRV-032">SRV-032</a> этот прогон не заменяет</span>
+    </p>
+    <h2>Зачем</h2>
+    <p>Нагрузочный стенд для всего репозитория не нужен: скрипты не обслуживают пользовательские запросы. Проверить стоит только связку sshd, fail2ban и лимит лога из скрипта 15. В контейнере без systemd это поведение не видно.</p>
+    <h2>Что сделать</h2>
+    <ol>
+      <li>ВМ Ubuntu 24.04, скрипты 10–15 уже прошли, рабочая сессия открыта на <code>SSH_PORT</code>.</li>
+      <li>С другой машины дать неудачных SSH больше <code>maxretry</code>. Ожидание: адрес есть в <code>fail2ban-client status sshd</code>, вход с другого адреса жив.</li>
+      <li>Послать пачку пакетов на закрытый порт. В syslog есть <code>FIREWALL DROP</code>, но не тысячи строк в секунду: у правила лимит 5 в минуту.</li>
+      <li>Команды и ожидаемый результат записать в <code>tests/vm-firewall.md</code>. Locust, k6 и отдельный фреймворк не добавлять.</li>
+    </ol>
+    <h2>Готово, когда</h2>
+    <ul>
+      <li>Один прогон на ВМ записан: бан совпал с jail, поток лога совпал с лимитом.</li>
+      <li>Без ВМ тикет не закрывать заметкой «проверено на заглушке».</li>
+    </ul>
+        </div>
+      </details>
+    </section>
+    <h2>8. Аудит сервера</h2>
+    <section class="ticket-list">
+      <details class="ticket" id="SRV-035" data-status="ready">
+        <summary>
+          <i class="ball ball-ready"></i>
+          <span class="id">SRV-035</span>
+          <span class="ticket-title">Скрипт проверки безопасности сервера</span>
+          <span class="status">Можно делать</span>
+        </summary>
+        <div class="ticket-body">
+<p class="meta">
+      <span class="tag">новый скрипт</span>
+      <span>файл: <code>4-services/45-security-audit.sh</code></span>
+      <span>в пресеты батча не входит</span>
+    </p>
+    <h2>Зачем</h2>
+    <p>После настройки нечем посмотреть, что на сервере уже открыто, что съело диск и какие дыры из SRV-027 … SRV-030 ещё живы. Нужен один отчёт: собранные факты, сильные стороны, предупреждения, критичное и конкретное действие. Где проблему уже закрывает скрипт этого репозитория, отчёт называет его путь.</p>
+    <h2>Что сделать</h2>
+    <ol>
+      <li>Новый исполняемый <code>4-services/45-security-audit.sh</code>. Подключает <code>common/_misc.sh</code>. В <code>batch/presets</code> его нет. Сторонние сканеры (lynis, rkhunter, clamav) не ставить: хватает <code>ss</code>, <code>df</code>, <code>findmnt</code>, <code>dpkg</code>, <code>iptables</code>, <code>systemctl</code>, <code>docker</code>.</li>
+      <li>Без аргументов скрипт только читает систему и печатает отчёт. <code>-h</code> и <code>--help</code> печатают, как запускать, полный список кодов, у каких кодов <code>--fix</code> меняет систему, и выходят 0 до проверок. <code>--fix CODE</code> — один код за запуск. Неизвестный аргумент и неизвестный код: <code>[ERROR]</code>, подсказка про <code>--help</code>, выход 2, система не меняется. Ключа «починить всё» нет.</li>
+      <li>Без root отчёт строится по тому, что доступно. Проверка без прав не становится успехом: в строке тот же код и текст «нет прав». В конце <code>[ERROR]</code>, выход 2. <code>--fix</code> без root выходит 2 до любых изменений.</li>
+      <li>Отчёт четырьмя блоками. <code>Собрано</code> — факты с кодами <code>AUD-I-*</code>, это не оценка. <code>Сильные стороны</code> — проверки, которые прошли. <code>Предупреждения</code> и <code>Критичное</code> — код, факт, что сделать. Если помогает скрипт репозитория, строка содержит путь от корня репозитория. В конце одна строка <code>Итог</code> со счётчиками. Выход 0, если критичных нет. Выход 1, если есть хотя бы одно критичное.</li>
+      <li>Повторный запуск без <code>--fix</code> ничего не пишет на диск. <code>--fix</code> на уже исправленной проверке печатает <code>[OK]</code> и не меняет файлы.</li>
+      <li>Раздел в <code>README.MD</code>: запуск, <code>--help</code>, <code>--fix</code>, что скрипт не входит в пресеты и что часть <code>--fix</code> зовёт скрипты 11, 13, 14 и 15.</li>
+    </ol>
+    <h2>Сбор фактов</h2>
+    <ul>
+      <li><code>AUD-I-OS</code> — <code>/etc/os-release</code>, ядро, uptime.</li>
+      <li><code>AUD-I-DISK</code> — <code>df -hP</code> и <code>df -i</code> по файловым системам, без tmpfs и devtmpfs.</li>
+      <li><code>AUD-I-MOUNT</code> — <code>findmnt</code>: точка, тип, опции.</li>
+      <li><code>AUD-I-PKG</code> — установленные пакеты и версии через <code>dpkg-query</code>. Нет <code>dpkg</code> — одна строка об этом.</li>
+      <li><code>AUD-I-PROC</code> — запущенные сервисы systemd. Нет systemd — список процессов.</li>
+      <li><code>AUD-I-PORT</code> — слушающие сокеты, <code>ss -lntup</code>.</li>
+      <li><code>AUD-I-RES</code> — load average, число ядер, доступная память, swap.</li>
+      <li><code>AUD-I-DOCKER</code> — <code>docker ps</code> и <code>docker images</code>. Нет бинаря docker — одна строка, это не ошибка.</li>
+      <li><code>AUD-I-LOG</code> — размеры файлов в <code>/var/log</code> и объём journal.</li>
+      <li><code>AUD-I-SUDO</code> — учётные записи в группе <code>sudo</code>.</li>
+    </ul>
+    <h2>Пакеты и чужие бинари</h2>
+    <p>Так закрывается просьба про фейковые списки: пакет числится установленным, а файлов нет, либо порт слушает бинарь, которого нет ни в одном пакете.</p>
+    <ul>
+      <li><code>AUD-PKG-GHOST</code> — критично, если <code>dpkg -V</code> показывает отсутствующие файлы у <code>openssh-server</code>, <code>sudo</code>, <code>iptables</code>, <code>nginx</code>, <code>fail2ban</code> или <code>docker-ce</code>. <code>--fix</code> нет.</li>
+      <li><code>AUD-PKG-ALIEN</code> — предупреждение: слушающий процесс, чей исполняемый файл <code>dpkg -S</code> не находит. Потоки ядра пропускать. <code>--fix</code> нет.</li>
+      <li><code>AUD-BIN-PATH</code> — критично: <code>sshd</code>, <code>sudo</code> или <code>iptables</code> находятся не в <code>/usr/bin</code> и не в <code>/usr/sbin</code>. <code>--fix</code> нет.</li>
+    </ul>
+    <h2>Порты по умолчанию</h2>
+    <p>Слушать на 127.0.0.1 можно: для баз это сильная сторона. Критично и предупреждение ниже — только адрес не из петли (в том числе <code>0.0.0.0</code> и <code>::</code>). <code>--fix</code> процесс не убивает. Если это sshd на 22, фикс — скрипт 13, и только когда в <code>.env</code> задан <code>SSH_PORT</code> и он не 22. Перед запуском 13 та же оговорка, что у батча: текущая сессия на старом порту оборвётся, пароль пользователя уже должен быть задан.</p>
+    <ul>
+      <li>Критично: <code>AUD-P-22</code> tcp 22 SSH, <code>AUD-P-23</code> tcp 23 telnet, <code>AUD-P-21</code> tcp 21 FTP, <code>AUD-P-69</code> udp 69 TFTP, <code>AUD-P-25</code> tcp 25 SMTP, <code>AUD-P-110</code> tcp 110 POP3, <code>AUD-P-143</code> tcp 143 IMAP, <code>AUD-P-139</code> tcp 139 NetBIOS, <code>AUD-P-445</code> tcp 445 SMB, <code>AUD-P-111</code> tcp и udp 111 RPC, <code>AUD-P-161</code> udp 161 SNMP, <code>AUD-P-389</code> tcp 389 LDAP, <code>AUD-P-1433</code> tcp 1433, <code>AUD-P-3306</code> tcp 3306 MySQL, <code>AUD-P-5432</code> tcp 5432 Postgres, <code>AUD-P-6379</code> tcp 6379 Redis, <code>AUD-P-27017</code> tcp 27017 Mongo, <code>AUD-P-11211</code> tcp 11211 Memcached, <code>AUD-P-9200</code> tcp 9200 Elasticsearch, <code>AUD-P-2375</code> tcp 2375 Docker без TLS, <code>AUD-P-3389</code> tcp 3389 RDP, <code>AUD-P-5900</code> tcp 5900 VNC, <code>AUD-P-6443</code> tcp 6443 API Kubernetes, <code>AUD-P-10250</code> tcp 10250 kubelet, <code>AUD-P-10000</code> tcp 10000 Webmin, <code>AUD-P-3128</code> tcp 3128 прокси, <code>AUD-P-1883</code> tcp 1883 MQTT, <code>AUD-P-5601</code> tcp 5601 Kibana.</li>
+      <li>Предупреждение: <code>AUD-P-465</code> tcp 465 и <code>AUD-P-587</code> tcp 587 (приём почты), <code>AUD-P-2376</code> tcp 2376 (Docker с TLS, но снаружи), <code>AUD-P-8080</code> tcp 8080 снаружи (шаблон 41 ждёт приложение на <code>127.0.0.1:8080</code>), <code>AUD-P-9090</code> tcp 9090.</li>
+      <li>Порт 22 закрыт, а <code>SSH_PORT</code> из <code>.env</code> слушается — это сильная сторона <code>AUD-P-22</code>, не предупреждение.</li>
+    </ul>
+    <h2>Почта, SSH, fail2ban</h2>
+    <ul>
+      <li><code>AUD-MAIL</code> — пакеты <code>postfix</code>, <code>exim4</code>, <code>sendmail</code>, <code>mailutils</code>, <code>cyrus-imap</code>, <code>dovecot</code>. Критично, если один из них слушает порт. Иначе предупреждение. <code>--fix</code> запускает <code>1-server-setup/11-remove-mail-server.sh</code>.</li>
+      <li><code>AUD-SSH-PASS</code> — критично: вход по паролю возможен без ключа (<code>PasswordAuthentication yes</code> и нет <code>AuthenticationMethods publickey,password</code>). Вход только по ключу ошибкой не считать. <code>--fix</code> запускает <code>1-server-setup/13-ssh-restrict.sh</code> с тем же предупреждением про обрыв сессии.</li>
+      <li><code>AUD-SSH-ROOT</code> — критично: <code>PermitRootLogin</code> не <code>no</code>. <code>--fix</code> тоже скрипт 13.</li>
+      <li><code>AUD-SSH-PORT</code> — критично: <code>Port</code> в sshd не совпадает с <code>SSH_PORT</code> из <code>.env</code>. <code>--fix</code> — скрипт 13, если <code>SSH_PORT</code> задан.</li>
+      <li><code>AUD-SSH-EMPTY</code> — критично: учётка с оболочкой входа и пустым паролем. <code>--fix</code> нет, пароль скрипт не придумывает.</li>
+      <li><code>AUD-SSH-UID0</code> — критично: больше одной учётки с uid 0. <code>--fix</code> нет.</li>
+      <li><code>AUD-F2B</code> — предупреждение: jail <code>sshd</code> в fail2ban не активен. <code>--fix</code> запускает <code>1-server-setup/14-install-fail2ban.sh</code>.</li>
+    </ul>
+    <h2>iptables</h2>
+    <ul>
+      <li><code>AUD-FW-INPUT</code> — критично: политика INPUT не DROP. <code>--fix</code> запускает <code>1-server-setup/15-secure-firewall.sh</code> после строки, что сессия оборвётся, если её порт не входит в новые правила.</li>
+      <li><code>AUD-FW-SSH</code> — критично: в INPUT нет ACCEPT на tcp <code>SSH_PORT</code>. <code>--fix</code> тот же скрипт 15 с той же оговоркой.</li>
+      <li><code>AUD-FW-LOG</code> — предупреждение: нет лога с префиксом <code>FIREWALL DROP</code>, монитор <code>4-services/40-firewall-monitor.sh</code> ничего не увидит. <code>--fix</code> — скрипт 15 с той же оговоркой.</li>
+      <li><code>AUD-FW-V6</code> — критично: у хоста есть IPv6, а политика ip6tables INPUT — ACCEPT. <code>--fix</code> запускает <code>1-server-setup/15-secure-firewall.sh</code> с той же оговоркой про обрыв сессии.</li>
+      <li><code>AUD-FW-SPORT53</code> — критично: в INPUT есть <code>--sport 53</code>. <code>--fix</code> запускает скрипт 15, он это правило убирает.</li>
+      <li><code>AUD-FW-FWD</code> — критично: <code>net.ipv4.ip_forward=1</code> и политика FORWARD — ACCEPT. <code>--fix</code> запускает скрипт 15: он ставит FORWARD DROP и не включает <code>ip_forward</code>.</li>
+      <li><code>AUD-FW-SAVE</code> — предупреждение: нет <code>/etc/iptables/rules.v4</code> или политика и порты в файле расходятся с живым filter. <code>--fix</code> нет: файл может быть старее живых правил. В строке показать, какая сторона расходится.</li>
+    </ul>
+    <h2>Диск, логи, ресурсы, sysctl</h2>
+    <ul>
+      <li><code>AUD-DISK-USE</code> — предупреждение от 80% занятого места, критично от 90%. <code>--fix</code> нет.</li>
+      <li><code>AUD-DISK-INODE</code> — те же пороги по inode. <code>--fix</code> нет.</li>
+      <li><code>AUD-MNT-STICKY</code> — критично: у <code>/tmp</code> нет sticky-бита. <code>--fix</code> делает только <code>chmod +t /tmp</code>. Требовать <code>noexec</code> на <code>/tmp</code> нельзя: ломается установка пакетов.</li>
+      <li><code>AUD-LOG-BIG</code> — предупреждение: файл в <code>/var/log</code> больше 500 МБ. Путь напечатать. Файл не удалять и не обнулять. <code>--fix</code> нет.</li>
+      <li><code>AUD-JRN-BIG</code> — предупреждение: journal больше 1 ГБ. <code>--fix</code> выполняет <code>journalctl --vacuum-size=200M</code>.</li>
+      <li><code>AUD-RES-LOAD</code> — предупреждение: load за 1 минуту больше двух чисел ядер. Это один замер, не критично. <code>--fix</code> нет.</li>
+      <li><code>AUD-RES-MEM</code> — предупреждение: доступной памяти меньше 10%. <code>--fix</code> нет.</li>
+      <li><code>AUD-RES-SWAP</code> — предупреждение: swap занят больше чем наполовину при нехватке памяти. <code>--fix</code> нет.</li>
+      <li><code>AUD-RES-ZOMBIE</code> — предупреждение: есть процессы-зомби, напечатать число. <code>--fix</code> нет.</li>
+      <li><code>AUD-SYS-FAILED</code> — предупреждение: список юнитов в состоянии failed. <code>--fix</code> их не перезапускает.</li>
+      <li><code>AUD-SYS-REBOOT</code> — предупреждение: есть <code>/var/run/reboot-required</code>. Сам скрипт не перезагружает машину.</li>
+      <li><code>AUD-SYS-TIME</code> — предупреждение: время не синхронизировано. <code>--fix</code> включает NTP через <code>timedatectl set-ntp true</code>, если есть systemd-timesyncd.</li>
+      <li><code>AUD-SYS-ASLR</code> — критично: <code>kernel.randomize_va_space</code> не 2. <code>--fix</code> пишет только этот ключ в <code>/etc/sysctl.d/99-sst-audit.conf</code> и применяет его. Чужие ключи в других файлах не трогать.</li>
+      <li><code>AUD-SYS-REDIR</code>, <code>AUD-SYS-RP</code>, <code>AUD-SYS-SYN</code>, <code>AUD-SYS-SRC</code> — предупреждения: <code>accept_redirects</code> не 0, <code>rp_filter</code> не 1, <code>tcp_syncookies</code> не 1, <code>accept_source_route</code> не 0. <code>--fix</code> дописывает в тот же <code>99-sst-audit.conf</code> только запрошенный ключ.</li>
+      <li><code>AUD-UPD</code> — предупреждение: <code>apt-get -s upgrade</code> показывает обновления из кармана security. Пакеты не ставить. Нет сети — строка «не проверено», это не критично.</li>
+    </ul>
+    <h2>Права и Docker</h2>
+    <ul>
+      <li><code>AUD-ENV-MODE</code> — критично: <code>/root/.env</code> существует и режим шире <code>600</code>. <code>--fix</code> делает <code>chmod 600</code>.</li>
+      <li><code>AUD-AUTH-KEY</code> — критично, если <code>authorized_keys</code> доступен на запись группе или остальным. Предупреждение, если доступен на чтение. <code>--fix</code> делает <code>chmod 600</code> на этот файл.</li>
+      <li><code>AUD-ETC-WW</code> — критично: файл в <code>/etc</code> доступен на запись остальным. Пути напечатать. <code>--fix</code> нет.</li>
+      <li><code>AUD-CRON-WW</code> — критично: файл в <code>/etc/cron.*</code> или crontab доступен на запись группе или остальным. <code>--fix</code> снимает чужую запись, бит исполнения не трогает.</li>
+      <li><code>AUD-HOME-WW</code> — предупреждение: домашний каталог пользователя с оболочкой входа доступен на запись остальным. <code>--fix</code> снимает запись у группы и остальных только с самого каталога, без рекурсии.</li>
+      <li><code>AUD-SUDO-NOPASS</code> — предупреждение: в sudoers есть <code>NOPASSWD</code>. <code>--fix</code> нет.</li>
+      <li><code>AUD-DK-PRIV</code> — критично: контейнер с <code>Privileged=true</code>. <code>--fix</code> контейнер не останавливает.</li>
+      <li><code>AUD-DK-SOCK</code> — критично: в контейнер смонтирован <code>docker.sock</code>. <code>--fix</code> нет.</li>
+      <li><code>AUD-DK-LATEST</code> — предупреждение: образ с тегом <code>latest</code>. <code>--fix</code> нет.</li>
+      <li><code>AUD-DK-DANGLE</code> — предупреждение: есть висячие образы. <code>--fix</code> выполняет <code>docker image prune -f</code> и больше ничего.</li>
+      <li><code>AUD-DK-PRUNE</code> — предупреждение: docker установлен, а <code>/etc/cron.daily/docker-image-prune</code> нет. <code>--fix</code> запускает <code>2-install-software/23-docker-autoprune.sh</code>.</li>
+      <li><code>AUD-NGX-TOK</code> — предупреждение, только если nginx установлен: в конфиге нет <code>server_tokens off</code>. Файл nginx скрипт не переписывает. <code>--fix</code> нет.</li>
+      <li><code>AUD-NGX-OLD</code> — критично, если в конфиге nginx есть <code>TLSv1</code>, <code>TLSv1.1</code> или <code>RC4</code>. Шаблон репозитория этих строк не пишет. <code>--fix</code> файл не переписывает, только показывает путь.</li>
+    </ul>
+    <h2>Готово, когда</h2>
+    <ul>
+      <li><code>--help</code> завершается 0, перечисляет коды этого тикета и не читает <code>/etc</code>.</li>
+      <li>На фикстурах (подмена вывода <code>ss</code>, <code>df</code>, <code>iptables-save</code>) есть по строке в сильных сторонах, в предупреждениях и в критичном. Живой VPS для закрытия тикета не нужен.</li>
+      <li><code>--fix</code> для кода без автоматического исправления ничего не меняет и объясняет, что сделать руками.</li>
+      <li><code>--fix AUD-ENV-MODE</code> на файле с режимом шире 600 приводит его к <code>600</code> и повторно сообщает, что проверка прошла.</li>
+      <li>Запуск без <code>--fix</code> не создаёт <code>99-sst-audit.conf</code>, не вызывает скрипты 11, 13, 14, 15 и 23.</li>
+      <li>В README есть раздел этого скрипта. В пресетах батча его нет.</li>
+    </ul>
         </div>
       </details>
     </section>
