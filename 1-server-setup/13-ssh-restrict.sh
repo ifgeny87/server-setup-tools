@@ -27,9 +27,7 @@ if ! getent group "$SSH_GROUP" > /dev/null; then
 fi
 
 # 1. Бэкап конфигурации
-cp /etc/ssh/sshd_config "$SSH_CONFIG_BACKUP"
-
-if [ $? -ne 0 ]; then
+if ! cp /etc/ssh/sshd_config "$SSH_CONFIG_BACKUP"; then
     logerr "Не удалось создать бэкап файла: /etc/ssh/sshd_config"
     exit 1
 fi
@@ -58,28 +56,31 @@ Port ${SSH_PORT}
 EOF
 
 # 4. Перезапускаем SSH
-logr "Перезапускаем SSH‑сервер..."
-systemctl restart ssh
-if [ $? -ne 0 ]; then
-    logerr "Yе удалось перезапустить SSH‑сервер. Проверьте: journalctl -u sshd"
+logr "Перезапускаем SSH-сервер..."
+if ! systemctl restart ssh; then
+    logerr "Не удалось перезапустить SSH-сервер. Проверьте: journalctl -u sshd"
     exit 1
 fi
 
 # 4. Проверяем конфигурацию
 logr "Проверяем конфигурацию SSH..."
-sshd -t
-if [ $? -eq 0 ]; then
-    logok "Настройка SSH‑сервера завершена
+if ! sshd -t; then
+    logerr "Конфигурация SSH недействительна. Проверьте /etc/ssh/sshd_config"
+    exit 1
+fi
+
+permit_root="не прочитано"
+if found=$(sshd -T | grep -E -i 'permitrootlogin'); then
+    permit_root="$found"
+fi
+
+logok "Настройка SSH-сервера завершена
 ----------------------------------------
 Порт SSH: $SSH_PORT
-Вход root по SSH: запрещён (check: $(sshd -T | grep -E PermitRootLogin))
+Вход root по SSH: запрещён (check: ${permit_root})
 Двухфакторная аутентификация: RSA ключ + пароль
 Бэкап конфигурации: $SSH_CONFIG_BACKUP
 ----------------------------------------
 "
-else
-    logerr "Конфигурация SSH недействительна. Проверьте /etc/ssh/sshd_config"
-    exit 1
-fi
 
 exit 0

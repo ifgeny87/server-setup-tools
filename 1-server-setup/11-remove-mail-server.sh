@@ -42,7 +42,7 @@ for pkg in "${MAIL_SERVERS[@]}"; do
         }
         removed=true
     else
-        log "$pkg не установлен"
+        logr "$pkg не установлен"
     fi
 done
 

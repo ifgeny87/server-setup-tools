@@ -1,13 +1,23 @@
-# Colors
-# Read more -- https://dev.to/ifenna__/adding-colors-to-bash-scripts-48g4
-COL_RES="\033[0m" # reset code
-COL_RED="\033[31;40m" # black bg, red fg
-COL_LIME="\033[92;40m" # black bg, lime fg
-COL_GRAY="\033[37;40m"
-COL_FG_BLUE="\033[0;34m"
-COL_FG_WHITE="\033[97m"
-COL_FG_YELLOW="\033[93m"
-COL_FG_GRAY="\033[37m"
+# Цвет только в терминале. NO_COLOR или перенаправление в файл оставляют метки без ANSI.
+if [ -t 1 ] && [ -z "${NO_COLOR+x}" ]; then
+    COL_RES="\033[0m"
+    COL_RED="\033[31;40m"
+    COL_LIME="\033[92;40m"
+    COL_GRAY="\033[37;40m"
+    COL_FG_BLUE="\033[0;34m"
+    COL_FG_WHITE="\033[97m"
+    COL_FG_YELLOW="\033[93m"
+    COL_FG_GRAY="\033[37m"
+else
+    COL_RES=""
+    COL_RED=""
+    COL_LIME=""
+    COL_GRAY=""
+    COL_FG_BLUE=""
+    COL_FG_WHITE=""
+    COL_FG_YELLOW=""
+    COL_FG_GRAY=""
+fi
 
 # timestamp [OPTION] - prints formatted timestamp
 # options:
@@ -33,7 +43,7 @@ function log() {
 function loghead() {
     echo -e "\n#-----------------------------------------------------------"
     printf "# "
-    log "🚀 $*"
+    log "$*"
     echo -e "#-----------------------------------------------------------\n"
 }
 

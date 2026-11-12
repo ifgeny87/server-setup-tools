@@ -46,8 +46,7 @@ HOME_DIR="/home/$NEWUSERNAME"
 
 # 3. Создаём пользователя (без пароля, с домашней директорией)
 logr "Создаём пользователя: $NEWUSERNAME"
-adduser --disabled-password --gecos "" "$NEWUSERNAME"
-if [ $? -ne 0 ]; then
+if ! adduser --disabled-password --gecos "" "$NEWUSERNAME"; then
     logerr "Не удалось создать пользователя: $NEWUSERNAME"
     exit 1
 fi
@@ -55,8 +54,7 @@ fi
 # 4. Добавляем в группы
 logr "Добавляем пользователя $NEWUSERNAME в группы: $USER_GROUPS"
 for group in $USER_GROUPS; do
-    usermod -aG "$group" "$NEWUSERNAME"
-    if [ $? -ne 0 ]; then
+    if ! usermod -aG "$group" "$NEWUSERNAME"; then
         logerr "Не удалось добавить пользователя $NEWUSERNAME в группу: $group"
         exit 1
     fi
@@ -75,13 +73,13 @@ fi
 
 # 6. Настраиваем ключ для пользователя
 logr "Настраиваем SSH‑ключ для '$NEWUSERNAME'"
-mkdir -p "$HOME_DIR/.ssh"
-echo "$SSH_KEY" > "$HOME_DIR/.ssh/authorized_keys"
-chmod 700 "$HOME_DIR/.ssh"
-chmod 600 "$HOME_DIR/.ssh/authorized_keys"
-chown -R "$NEWUSERNAME:$NEWUSERNAME" "$HOME_DIR/.ssh"
-if [ $? -ne 0 ]; then
-    logerr "Не удалось настроить SSH‑ключ для '$NEWUSERNAME'."
+if ! mkdir -p "$HOME_DIR/.ssh" \
+    || ! echo "$SSH_KEY" > "$HOME_DIR/.ssh/authorized_keys" \
+    || ! chmod 700 "$HOME_DIR/.ssh" \
+    || ! chmod 600 "$HOME_DIR/.ssh/authorized_keys" \
+    || ! chown -R "$NEWUSERNAME:$NEWUSERNAME" "$HOME_DIR/.ssh"
+then
+    logerr "Не удалось настроить SSH-ключ для '$NEWUSERNAME'."
     exit 1
 fi
 

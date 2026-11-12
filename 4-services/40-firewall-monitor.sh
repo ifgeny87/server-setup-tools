@@ -4,6 +4,7 @@ set -euo pipefail
 
 # Создаём systemd unit
 
+loghead "Монитор firewall в Telegram"
 logr "Настраиваем автозапуск"
 
 LOG_MONITOR="/usr/local/bin/firewall-monitor.py"
@@ -56,7 +57,7 @@ def main():
             m = pattern.search(line)
             if m:
                 src, dst, port = m.groups()
-                send_message(f"🚨 Попытка подключения: {src} → {dst}:{port}")
+                send_message(f"Попытка подключения: {src} -> {dst}:{port}")
 main()
 EOF
 
