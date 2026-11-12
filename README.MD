@@ -3,6 +3,14 @@
 * Repo: https://github.com/ifgeny87/server-setup-tools
 * Version: 1.0.0
 
+## Installation
+
+```shell
+cd /opt
+git clone https://github.com/ifgeny87/server-setup-tools
+cd /opt/server-setup-tools
+```
+
 ## Description
 
 Репозиторий содержит набор скриптов для очистки и настройки новых серверов.
