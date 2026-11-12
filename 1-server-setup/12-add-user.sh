@@ -54,6 +54,17 @@ fi
 # 4. Добавляем в группы
 logr "Добавляем пользователя $NEWUSERNAME в группы: $USER_GROUPS"
 for group in $USER_GROUPS; do
+    if ! getent group "$group" >/dev/null; then
+        if [ "$group" = "sudo" ]; then
+            logerr "Группы sudo нет. Сначала выполните 1-server-setup/10-prepare-tools.sh"
+            exit 1
+        fi
+        logr "Создается группа: $group"
+        if ! groupadd "$group"; then
+            logerr "Не удалось создать группу: $group"
+            exit 1
+        fi
+    fi
     if ! usermod -aG "$group" "$NEWUSERNAME"; then
         logerr "Не удалось добавить пользователя $NEWUSERNAME в группу: $group"
         exit 1

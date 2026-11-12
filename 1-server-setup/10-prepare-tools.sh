@@ -12,11 +12,14 @@ checkRoot
 
 loghead "Установка базовых инструментов"
 
+export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=a
+
 logr "Обновление пакетов..."
 apt-get update -yy
 
 logr "Обновление системы..."
-apt-get upgrade -y
+apt-get -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
 
 logr "Установка инструментов..."
 apt-get install -yy zsh tmux vim mc htop git gh net-tools

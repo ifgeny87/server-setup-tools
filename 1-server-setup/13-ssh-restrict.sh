@@ -55,17 +55,26 @@ AllowGroups ${SSH_GROUP}
 Port ${SSH_PORT}
 EOF
 
-# 4. Перезапускаем SSH
-logr "Перезапускаем SSH-сервер..."
-if ! systemctl restart ssh; then
-    logerr "Не удалось перезапустить SSH-сервер. Проверьте: journalctl -u sshd"
+# Сначала тест. Битый конфиг не должен перезапускать сервис.
+logr "Проверяем конфигурацию SSH..."
+if ! sshd -t; then
+    logerr "Конфигурация SSH недействительна. Возвращаю $SSH_CONFIG_BACKUP"
+    cp "$SSH_CONFIG_BACKUP" /etc/ssh/sshd_config
     exit 1
 fi
 
-# 4. Проверяем конфигурацию
-logr "Проверяем конфигурацию SSH..."
-if ! sshd -t; then
-    logerr "Конфигурация SSH недействительна. Проверьте /etc/ssh/sshd_config"
+if systemctl cat ssh.service >/dev/null 2>&1; then
+    SSH_UNIT=ssh
+elif systemctl cat sshd.service >/dev/null 2>&1; then
+    SSH_UNIT=sshd
+else
+    logerr "Не найден юнит ssh или sshd"
+    exit 1
+fi
+
+logr "Перезапускаем SSH-сервер ($SSH_UNIT)..."
+if ! systemctl restart "$SSH_UNIT"; then
+    logerr "Не удалось перезапустить SSH-сервер. Проверьте: journalctl -u $SSH_UNIT"
     exit 1
 fi
 

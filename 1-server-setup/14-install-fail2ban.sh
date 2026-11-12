@@ -4,6 +4,15 @@ set -euo pipefail
 
 # Скрипт установки и настройки fail2ban для SSH
 # Блокировка IP после 3 неудачных попыток на 7 дней (604800 секунд)
+# Порт берётся из SSH_PORT: скрипт 13 уже уводит SSH с 22.
+
+checkRoot
+loadEnv
+
+if [ -z "${SSH_PORT:-}" ]; then
+    logerr "В .env не задан SSH_PORT"
+    exit 1
+fi
 
 loghead "Установка и настройка fail2ban"
 
@@ -26,11 +35,6 @@ fi
 # Настраиваем fail2ban для SSH
 cat > "$JAIL_LOCAL" <<EOF
 [DEFAULT]
-# Отправка писем (можно отключить)
-destemail = root@localhost
-sender = fail2ban@localhost
-mta = sendmail
-
 # Лог
 loglevel = INFO
 logtarget = /var/log/fail2ban.log
@@ -50,7 +54,7 @@ banaction = iptables-multiport
 # --- SSH защита ---
 [sshd]
 enabled = true
-port = ssh
+port = ${SSH_PORT}
 filter = sshd
 logpath = /var/log/auth.log
 maxretry = 3
@@ -62,9 +66,12 @@ logr "Активация автозапуска и перезапуск fail2ban
 systemctl enable fail2ban
 systemctl restart fail2ban
 
-# Проверка статуса
 sleep 1
-systemctl is-active --quiet fail2ban && STATUS="активен" || STATUS="не запущен"
+if ! systemctl is-active --quiet fail2ban; then
+    logerr "fail2ban не активен после перезапуска"
+    exit 1
+fi
+STATUS="активен"
 
 logok "Fail2ban установлен и настроен
 ----------------------------------------

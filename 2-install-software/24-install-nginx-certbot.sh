@@ -6,6 +6,17 @@ set -euo pipefail
 
 checkRoot
 
+CERTBOT_EMAIL=${CERTBOT_EMAIL:-}
+if [ -z "$CERTBOT_EMAIL" ]; then
+    if [ -t 0 ]; then
+        read -r -p "Email для регистрации certbot: " CERTBOT_EMAIL
+    fi
+fi
+if [ -z "$CERTBOT_EMAIL" ]; then
+    logerr "Нужен CERTBOT_EMAIL до регистрации в certbot"
+    exit 1
+fi
+
 loghead "Установка и настройка nginx и certbot"
 
 logr "Установка nginx и certbot..."
@@ -30,6 +41,7 @@ cat > $FILE <<EOF
 #
 server {
     listen 80;
+    include /etc/nginx/snippets/sst-errors.conf;
 
     location / {
         return 301 https://$host$request_uri;
@@ -43,17 +55,45 @@ server {
     listen 443 ssl http2 default_server;
     listen [::]:443 ssl http2 default_server;
 
-    ssl_ciphers aNULL;
-    set $empty "";
-    ssl_certificate data:$empty;
-    ssl_certificate_key data:$empty;
+    include /etc/nginx/snippets/sst-errors.conf;
+
+    ssl_certificate     /etc/nginx/ssl/default-reject.crt;
+    ssl_certificate_key /etc/nginx/ssl/default-reject.key;
 
     return 404;
 }
 EOF
 
+mkdir -p /etc/nginx/ssl /etc/nginx/snippets
+if [ ! -f /etc/nginx/ssl/default-reject.crt ]; then
+    logr "Создаём сертификат-заглушку для чужих доменов"
+    if ! openssl req -x509 -nodes -newkey rsa:2048 -days 3650 \
+        -keyout /etc/nginx/ssl/default-reject.key \
+        -out /etc/nginx/ssl/default-reject.crt \
+        -subj "/CN=invalid" >/dev/null 2>&1; then
+        logerr "Не удалось создать сертификат-заглушку"
+        exit 1
+    fi
+fi
+if [ ! -e /etc/nginx/snippets/sst-errors.conf ]; then
+    : > /etc/nginx/snippets/sst-errors.conf
+fi
+
+logr "Проверяем конфиг nginx..."
+if ! nginx -t; then
+    logerr "nginx -t не прошёл: $FILE"
+    exit 1
+fi
+if ! nginx -s reload; then
+    logerr "Не удалось перечитать nginx"
+    exit 1
+fi
+
 logr "Регистрация в certbot..."
-certbot register
+if ! certbot register --non-interactive --agree-tos -m "$CERTBOT_EMAIL"; then
+    logerr "Не удалось зарегистрировать аккаунт certbot"
+    exit 1
+fi
 
 FILE=/etc/cron.daily/certbot-renew
 logr "Добавление расписания для автоматического обновления сертификатов и перезапуска nginx: $FILE"

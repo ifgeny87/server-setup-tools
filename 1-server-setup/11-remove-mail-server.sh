@@ -6,17 +6,31 @@ set -euo pipefail
 # (Postfix, Exim, Sendmail и др.)
 
 checkRoot
-loadEnv
 
-# apt файлы блокировки удаления
-lock_files=(
-"/var/lib/dpkg/lock-frontend"
-"/var/cache/apt/archives/lock"
-)
-for lockfile in "${lock_files[@]}"; do
-    rm -f $lockfile
-done
 loghead "Начало удаления почтовых серверов"
+
+# Юнит, который надо остановить до purge. У mailutils своего сервиса нет.
+unit_for_mail_pkg() {
+    case "$1" in
+        postfix) echo postfix ;;
+        exim4) echo exim4 ;;
+        sendmail) echo sendmail ;;
+        dovecot) echo dovecot ;;
+        cyrus-imap) echo cyrus-imapd ;;
+        *) echo "" ;;
+    esac
+}
+
+stop_mail_unit() {
+    local unit="$1"
+    [ -n "$unit" ] || return 0
+    if systemctl list-unit-files "${unit}.service" --no-legend 2>/dev/null | awk '{print $1}' | grep -qx "${unit}.service"; then
+        logr "Останавливаю юнит: $unit"
+        if ! systemctl disable --now "$unit"; then
+            logwarn "Не удалось остановить юнит: $unit"
+        fi
+    fi
+}
 
 
 # Список известных почтовых серверов (MTA) в Ubuntu
@@ -36,6 +50,7 @@ removed=false
 for pkg in "${MAIL_SERVERS[@]}"; do
     if dpkg -l | grep -q "^ii  $pkg"; then
         logr "Удаляю $pkg..."
+        stop_mail_unit "$(unit_for_mail_pkg "$pkg")"
         apt-get purge -y "$pkg"* || {
             logwarn "Ошибка при удалении $pkg. Продолжаем..."
             continue

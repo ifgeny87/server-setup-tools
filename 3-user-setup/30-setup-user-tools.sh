@@ -11,8 +11,14 @@ set -euo pipefail
 
 loghead "Настройка рабочего окружения пользователя"
 
-logr "Выбор редактора по умолчанию"
-select-editor
+if [ -n "${EDITOR:-}" ]; then
+    logr "Редактор уже задан: $EDITOR"
+elif [ ! -t 0 ]; then
+    logr "Нет терминала, выбор редактора пропущен"
+else
+    logr "Выбор редактора по умолчанию"
+    select-editor
+fi
 
 logr "Заменяем шелл по умолчанию на zsh"
 chsh -s $(which zsh)

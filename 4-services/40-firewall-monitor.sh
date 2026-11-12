@@ -2,9 +2,29 @@
 set -euo pipefail
 . "$(dirname -- "$0")/../common/_misc.sh" # load misc
 
-# Создаём systemd unit
+# Запускать после 1-server-setup/15-secure-firewall.sh:
+# монитор читает строки с префиксом FIREWALL DROP.
+
+checkRoot
+
+ENV_PATH="/root/.env"
+if [ -f "$ENV_PATH" ]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "$ENV_PATH"
+    set +a
+fi
+if [ -z "${TELEGRAM_API_TOKEN:-}" ] || [ -z "${TELEGRAM_CHAT_ID:-}" ]; then
+    logerr "Нет TELEGRAM_API_TOKEN или TELEGRAM_CHAT_ID в окружении или в $ENV_PATH. Таймер не включён"
+    exit 1
+fi
 
 loghead "Монитор firewall в Telegram"
+logr "Ставим пакеты для монитора"
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -y
+apt-get install -yy python3 python3-requests python3-dotenv
+
 logr "Настраиваем автозапуск"
 
 LOG_MONITOR="/usr/local/bin/firewall-monitor.py"
@@ -20,7 +40,7 @@ from pathlib import Path
 
 p = Path(__file__).parents[2]
 
-dir_docker = f'~/.env'
+dir_docker = "$ENV_PATH"
 dotenv_path = (dir_docker)
 if os.path.exists(dotenv_path):
     load_dotenv(dotenv_path)

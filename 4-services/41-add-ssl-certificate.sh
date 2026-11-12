@@ -28,7 +28,12 @@ certbot certonly --nginx -d "$DOMAIN"
 
 logr "Создается шаблонный конфиг nginx для нового домена: $DOMAIN"
 FILE=/etc/nginx/conf.d/${DOMAIN}.conf
-cat > $FILE <<EOF
+mkdir -p /etc/nginx/snippets
+if [ ! -e /etc/nginx/snippets/sst-errors.conf ]; then
+    : > /etc/nginx/snippets/sst-errors.conf
+fi
+TMP=$(mktemp)
+cat > "$TMP" <<EOF
 # Location: $FILE
 # Author: $(whoami)
 # Created: $(timestamp)
@@ -36,12 +41,14 @@ server {
     listen 443 ssl;
     server_name $DOMAIN;
 
+    include /etc/nginx/snippets/sst-errors.conf;
+
     ssl_session_cache         shared:SSL:10m;
     ssl_session_timeout       10m; # default 5m
     ssl_prefer_server_ciphers on;
     ssl_certificate           /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
     ssl_certificate_key       /etc/letsencrypt/live/$DOMAIN/privkey.pem;
-    ssl_protocols             SSLv3 TLSv1.1 TLSv1.2 TLSv1.3;
+    ssl_protocols             TLSv1.2 TLSv1.3;
     ssl_ciphers               RC4:HIGH:!aNULL:!MD5:!kEDH;
 
     fastcgi_read_timeout  30;
@@ -80,6 +87,27 @@ server {
     }
 }
 EOF
+BACKUP=""
+if [ -f "$FILE" ]; then
+    BACKUP=$(mktemp)
+    cp "$FILE" "$BACKUP"
+fi
+cp "$TMP" "$FILE"
+if ! nginx -t; then
+    logerr "nginx -t не прошёл, конфиг $FILE не оставлен"
+    if [ -n "$BACKUP" ]; then
+        cp "$BACKUP" "$FILE"
+    else
+        rm -f "$FILE"
+    fi
+    rm -f "$TMP" ${BACKUP:+"$BACKUP"}
+    exit 1
+fi
+rm -f "$TMP" ${BACKUP:+"$BACKUP"}
+if ! nginx -s reload; then
+    logerr "Не удалось перечитать nginx"
+    exit 1
+fi
 
 logok "Получение SSL сертификата завершено
 ----------------------------------------

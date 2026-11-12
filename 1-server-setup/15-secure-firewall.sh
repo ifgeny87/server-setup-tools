@@ -5,6 +5,7 @@ set -euo pipefail
 # Настройка iptables-файервола с учётом Docker и автозапуском через systemd
 # Работает на Ubuntu (20.04+, 22.04+)
 
+checkRoot
 loadEnv
 
 # Проверка обязательных переменных
@@ -15,38 +16,39 @@ fi
 
 loghead "Настройка Firewall"
 
-# Создаём цепочку DOCKER-USER, если не существует
-iptables -N DOCKER-USER || true
-iptables -F DOCKER-USER
-
 # --- Основные правила ---
 logr "Применяем правила iptables"
-# Разрешаем уже установленные соединения
-iptables -A DOCKER-USER -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-
-# Разрешаем порты: SSH, HTTP, HTTPS
 iptables -F INPUT
-# Разрешаем loopback
 iptables -A INPUT -i lo -j ACCEPT
 iptables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-iptables -A INPUT -p tcp --dport $SSH_PORT -j ACCEPT
+iptables -A INPUT -p tcp --dport "$SSH_PORT" -j ACCEPT
 iptables -A INPUT -p tcp --dport 80 -j ACCEPT
 iptables -A INPUT -p tcp --dport 443 -j ACCEPT
-# (чтобы можно было обращаться к внешним DNS-серверам)
 iptables -A INPUT -p udp --sport 53 -j ACCEPT
 iptables -A INPUT -p tcp --sport 53 -j ACCEPT
 iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
 iptables -A OUTPUT -p tcp --dport 53 -j ACCEPT
-
-# Логирование попыток на другие порты (в syslog)
 iptables -A INPUT -m limit --limit 5/min -j LOG --log-prefix "FIREWALL DROP: " --log-level 4
-
-# Всё остальное дропаем
 iptables -A INPUT -j DROP
 
-# Разрешаем форвардинг Docker контейнеров
-iptables -I FORWARD -o docker0 -j ACCEPT
-iptables -I FORWARD -i docker0 -j ACCEPT
+if ip link show docker0 >/dev/null 2>&1; then
+    logr "Интерфейс docker0 есть, добавляем правила Docker"
+    iptables -N DOCKER-USER 2>/dev/null || true
+    iptables -F DOCKER-USER
+    iptables -A DOCKER-USER -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+    iptables -I FORWARD -o docker0 -j ACCEPT
+    iptables -I FORWARD -i docker0 -j ACCEPT
+else
+    logwarn "Интерфейс docker0 не найден, правила Docker пропущены"
+fi
+
+if dpkg -s fail2ban >/dev/null 2>&1; then
+    logr "Перезапускаем fail2ban, чтобы вернуть его цепочки в INPUT"
+    if ! systemctl restart fail2ban; then
+        logerr "Не удалось перезапустить fail2ban после правил iptables"
+        exit 1
+    fi
+fi
 
 # Сохраняем правила
 logr "Сохраняем правила"
