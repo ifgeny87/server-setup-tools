@@ -19,6 +19,6 @@ logr "Обновление системы..."
 apt-get upgrade -y
 
 logr "Установка инструментов..."
-apt-get install -yy zsh tmux vim mc htop git
+apt-get install -yy zsh tmux vim mc htop git gh net-tools
 
 logok "Установка базовых инструментов завершена"
