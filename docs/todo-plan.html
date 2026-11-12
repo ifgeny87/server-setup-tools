@@ -564,7 +564,7 @@ details.ticket > summary .status { margin-left: auto; }
       <a href="#SRV-019"><i class="ball ball-done"></i><span class="menu-id">SRV-019</span><span class="menu-title">Повторный запуск без поломки системы</span></a>
       <a href="#SRV-020"><i class="ball ball-done"></i><span class="menu-id">SRV-020</span><span class="menu-title">Батч-скрипт: выбор, вопросы, стоп на ошибке</span></a>
       <a href="#SRV-021"><i class="ball ball-done"></i><span class="menu-id">SRV-021</span><span class="menu-title">Пресеты для запуска без участия пользователя</span></a>
-      <a href="#SRV-022"><i class="ball ball-ready"></i><span class="menu-id">SRV-022</span><span class="menu-title">Подробно описать в README работу каждого скрипта</span></a>
+      <a href="#SRV-022"><i class="ball ball-done"></i><span class="menu-id">SRV-022</span><span class="menu-title">Подробно описать в README работу каждого скрипта</span></a>
       <a href="#SRV-023"><i class="ball ball-done"></i><span class="menu-id">SRV-023</span><span class="menu-title">Интерактивное управление форвардом iptables</span></a>
       <a href="#SRV-024"><i class="ball ball-done"></i><span class="menu-id">SRV-024</span><span class="menu-title">Кастомные страницы ошибок nginx</span></a>
       <a href="#SRV-025"><i class="ball ball-done"></i><span class="menu-id">SRV-025</span><span class="menu-title">Страницы ошибок не ломают штатный nginx</span></a>
@@ -576,7 +576,7 @@ details.ticket > summary .status { margin-left: auto; }
       <main class="wrap">
         <section class="how" id="how-to-read">
           <h2>Как читать</h2>
-          <p>План идёт сверху вниз, номера совпадают с порядком работы. Описание тикета свёрнуто и открывается по заголовку. Зелёный шарик — выполнено. Жёлтый — задачу можно делать, отдельного статуса «в работе» нет. Красный — задачу блокируют другие. В меню текущий пункт жирный, уже пройденные светлее. Следующий шаг — <a href="#SRV-022">SRV-022</a>.</p>
+          <p>План идёт сверху вниз, номера совпадают с порядком работы. Описание тикета свёрнуто и открывается по заголовку. Зелёный шарик — выполнено. Жёлтый — задачу можно делать, отдельного статуса «в работе» нет. Красный — задачу блокируют другие. В меню текущий пункт жирный, уже пройденные светлее. Все тикеты плана выполнены.</p>
           <p class="how-counts">
             <span><i class="ball ball-done"></i>Выполнено <b data-count="done">0</b></span>
             <span><i class="ball ball-ready"></i>Можно делать <b data-count="ready">0</b></span>
@@ -1224,7 +1224,7 @@ details.ticket > summary .status { margin-left: auto; }
       <li>Скрипты <code>20</code>–<code>24</code>, <code>30</code> и <code>41</code> пока только назвать. Для <code>40-firewall-monitor.sh</code> коротко описать Telegram и интервал 30 секунд.</li>
       <li>Добавить локальную проверку через <code>docker run -it --rm ubuntu /bin/bash</code>.</li>
     </ol>
-    <p class="note note-warn">Этот текст уже в репозитории и местами расходится со скриптами: перепутаны папки 2 и 3, списки пакетов неполные. Исправление не входит в шаг и лежит в <a href="#SRV-022">SRV-022</a>.</p>
+    <p class="note note-ok">Расхождения первого текста с кодом закрыты в <a href="#SRV-022">SRV-022</a>: папки, пакеты и отдельные разделы скриптов.</p>
 
     <h2>Готово, когда</h2>
     <ul>
@@ -1649,12 +1649,12 @@ STEP 4-services/43-nginx-error-pages.sh</code></pre>
     </ul>
         </div>
       </details>
-      <details class="ticket" id="SRV-022" data-status="ready">
+      <details class="ticket" id="SRV-022" data-status="done">
         <summary>
-          <i class="ball ball-ready"></i>
+          <i class="ball ball-done"></i>
           <span class="id">SRV-022</span>
           <span class="ticket-title">Подробно описать в README работу каждого скрипта</span>
-          <span class="status">Можно делать</span>
+          <span class="status">Выполнено</span>
         </summary>
         <div class="ticket-body">
 <p class="meta">
@@ -1713,6 +1713,7 @@ STEP 4-services/43-nginx-error-pages.sh</code></pre>
       <li>Из README можно пройти базовую настройку, не открывая исходники: порядок, пользователь root или нет, переменные, как не потерять SSH.</li>
       <li>Про ufw сказано, что он не используется.</li>
     </ul>
+    <div class="note note-ok">README переписан по текущим скриптам: папки, переменные, батч, форвард и страницы ошибок. Проход настройки на живой Ubuntu в этой среде не делался.</div>
         </div>
       </details>
       <details class="ticket" id="SRV-023" data-status="done">
