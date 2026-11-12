@@ -16,24 +16,20 @@ fi
 
 loghead "Установка и настройка fail2ban"
 
-logr "Установка..."
-apt-get update -y
-apt-get install -y fail2ban
+if dpkg -s fail2ban >/dev/null 2>&1; then
+    logok "fail2ban уже установлен"
+else
+    logr "Установка..."
+    apt-get update -y
+    apt-get install -y fail2ban
+fi
 
 logr "Настройка..."
 
-# Основная директория
 JAIL_LOCAL="/etc/fail2ban/jail.local"
 
-# Резервная копия, если файл уже есть
-if [ -f "$JAIL_LOCAL" ]; then
-    JAIL_BACKUP=$JAIL_LOCAL.bak.$(date +%F_%H-%M-%S)
-    logr "Создается копия jail.local: $JAIL_BACKUP"
-    cp "$JAIL_LOCAL" "$JAIL_BACKUP"
-fi
-
-# Настраиваем fail2ban для SSH
-cat > "$JAIL_LOCAL" <<EOF
+# Тот же текст при повторе не перезаписывает файл и не рестартует сервис.
+sst_write_if_changed "$JAIL_LOCAL" <<EOF
 [DEFAULT]
 # Лог
 loglevel = INFO
@@ -62,9 +58,16 @@ bantime = 604800
 findtime = 600
 EOF
 
-logr "Активация автозапуска и перезапуск fail2ban..."
 systemctl enable fail2ban
-systemctl restart fail2ban
+if [ "$SST_FILE_CHANGED" = 1 ] || ! systemctl is-active --quiet fail2ban; then
+    logr "Перезапуск fail2ban..."
+    if ! systemctl restart fail2ban; then
+        logerr "Не удалось перезапустить fail2ban"
+        exit 1
+    fi
+else
+    logr "jail.local совпадает, fail2ban уже активен"
+fi
 
 sleep 1
 if ! systemctl is-active --quiet fail2ban; then

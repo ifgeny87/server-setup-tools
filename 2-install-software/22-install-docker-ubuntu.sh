@@ -7,6 +7,16 @@ set -euo pipefail
 
 checkRoot
 
+if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    logok "Docker Compose уже установлен
+----------------------------------------
+$(docker -v)
+$(docker compose version)
+----------------------------------------
+"
+    exit 0
+fi
+
 loghead "Установка Docker и Docker Compose под Ubuntu"
 
 apt-get update -y

@@ -90,3 +90,64 @@ function loadEnv() {
     fi
     source "$ENV_FILE"
 }
+
+# Пишет stdin в файл только если содержимое отличается.
+# SST_FILE_CHANGED=1, если файл записан, иначе 0.
+function sst_write_if_changed() {
+    local dest="$1"
+    local tmp
+    tmp=$(mktemp)
+    cat > "$tmp"
+    SST_FILE_CHANGED=0
+    if [ -f "$dest" ] && cmp -s "$dest" "$tmp"; then
+        rm -f "$tmp"
+        return 0
+    fi
+    mkdir -p "$(dirname -- "$dest")"
+    cat "$tmp" > "$dest"
+    rm -f "$tmp"
+    SST_FILE_CHANGED=1
+}
+
+# Заменяет блок между метками BEGIN/END sst. Совпавший блок файл не трогает.
+# Текст вне блока сохраняется. SST_FILE_CHANGED=1, если файл записан.
+function sst_replace_block() {
+    local file="$1"
+    local name="$2"
+    local body="$3"
+    local begin="# BEGIN sst ${name}"
+    local end="# END sst ${name}"
+    local current=""
+    local tmp
+    SST_FILE_CHANGED=0
+    if [ -f "$file" ]; then
+        current=$(awk -v b="$begin" -v e="$end" '
+            $0 == b { grab = 1; next }
+            $0 == e { grab = 0; next }
+            grab { print }
+        ' "$file")
+    fi
+    if [ "$current" = "$body" ]; then
+        return 0
+    fi
+    tmp=$(mktemp)
+    if [ -f "$file" ]; then
+        awk -v b="$begin" -v e="$end" '
+            $0 == b { skip = 1; next }
+            $0 == e { skip = 0; next }
+            skip { next }
+            { print }
+        ' "$file" > "$tmp"
+    fi
+    {
+        if [ -s "$tmp" ]; then
+            cat "$tmp"
+            echo
+        fi
+        printf '%s\n' "$begin"
+        printf '%s\n' "$body"
+        printf '%s\n' "$end"
+    } > "${tmp}.new"
+    sst_write_if_changed "$file" < "${tmp}.new"
+    rm -f "$tmp" "${tmp}.new"
+}

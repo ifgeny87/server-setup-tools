@@ -9,6 +9,11 @@ if ! command -v zsh >/dev/null 2>&1; then
     exit 1
 fi
 
+if [ -d "${HOME}/.oh-my-zsh" ]; then
+    logok "oh-my-zsh уже установлен"
+    exit 0
+fi
+
 loghead "Установка oh-my-zsh"
 logr "Устанавливаем oh-my-zsh"
 export RUNZSH=no

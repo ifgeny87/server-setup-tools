@@ -19,6 +19,11 @@ if [ -z "$SSH_PORT" ] || [ -z "$SSH_CONFIG_BACKUP" ]; then
     exit 1
 fi
 
+if [ ! -f /etc/ssh/sshd_config ]; then
+    logerr "Нет файла /etc/ssh/sshd_config"
+    exit 1
+fi
+
 # Создаём группу для пользвоателей SSH
 # Проверка дублируется при создании пользователя
 if ! getent group "$SSH_GROUP" > /dev/null; then
@@ -26,41 +31,83 @@ if ! getent group "$SSH_GROUP" > /dev/null; then
     groupadd "$SSH_GROUP"
 fi
 
-# 1. Бэкап конфигурации
-if ! cp /etc/ssh/sshd_config "$SSH_CONFIG_BACKUP"; then
-    logerr "Не удалось создать бэкап файла: /etc/ssh/sshd_config"
-    exit 1
-fi
-logd "Бэкап конфигурации сохранен: $SSH_CONFIG_BACKUP"
-
-# 2. Удаляем или меняем старые директивы, если они есть в sshd_config
-sed -i -E "/^PermitRootLogin\s.*/d" /etc/ssh/sshd_config
-sed -i -E "/^PasswordAuthentication\s.*/d" /etc/ssh/sshd_config
-sed -i -E "/^PubkeyAuthentication\s.*/d" /etc/ssh/sshd_config
-sed -i -E "/^AuthenticationMethods\s.*/d" /etc/ssh/sshd_config
-sed -i -E "/^AllowGroups\s.*/d" /etc/ssh/sshd_config
-sed -i -E "/^Port\s.*/d" /etc/ssh/sshd_config
-
-# 3. Добавляем новые правила
-cat >> /etc/ssh/sshd_config <<EOF
-#
-# --- Restrict SSH Access ---
-# Author: $(whoami)
-# Date: $(timestamp)
-PermitRootLogin no
+BEGIN="# BEGIN sst ssh-restrict"
+END="# END sst ssh-restrict"
+BODY="PermitRootLogin no
 PasswordAuthentication yes
 PubkeyAuthentication yes
 AuthenticationMethods publickey,password
 AllowGroups ${SSH_GROUP}
-Port ${SSH_PORT}
-EOF
+Port ${SSH_PORT}"
 
-# Сначала тест. Битый конфиг не должен перезапускать сервис.
-logr "Проверяем конфигурацию SSH..."
-if ! sshd -t; then
-    logerr "Конфигурация SSH недействительна. Возвращаю $SSH_CONFIG_BACKUP"
-    cp "$SSH_CONFIG_BACKUP" /etc/ssh/sshd_config
-    exit 1
+# Один блок в конце файла. Те же директивы вне блока снимаются, чтобы не копиться.
+DESIRED=$(mktemp)
+awk -v b="$BEGIN" -v e="$END" '
+    $0 == b { skip = 1; next }
+    $0 == e { skip = 0; next }
+    skip { next }
+    $0 == "# --- Restrict SSH Access ---" { next }
+    $0 ~ /^(PermitRootLogin|PasswordAuthentication|PubkeyAuthentication|AuthenticationMethods|AllowGroups|Port)[[:space:]]/ { next }
+    { line[++n] = $0 }
+    END {
+        last = n
+        while (last > 0 && line[last] ~ /^[[:space:]]*$/) last--
+        for (i = 1; i <= last; i++) print line[i]
+    }
+' /etc/ssh/sshd_config > "$DESIRED.out"
+{
+    if [ -s "$DESIRED.out" ]; then
+        cat "$DESIRED.out"
+        echo
+    fi
+    printf '%s\n' "$BEGIN"
+    printf '%s\n' "$BODY"
+    printf '%s\n' "$END"
+} > "$DESIRED"
+rm -f "$DESIRED.out"
+
+current_port=$(sshd -T -f /etc/ssh/sshd_config 2>/dev/null | awk 'tolower($1)=="port" { print $2; exit }' || true)
+made_backup=0
+
+if cmp -s /etc/ssh/sshd_config "$DESIRED"; then
+    logr "Конфиг SSH уже совпадает"
+    rm -f "$DESIRED"
+    need_restart=0
+else
+    if ! cp /etc/ssh/sshd_config "$SSH_CONFIG_BACKUP"; then
+        logerr "Не удалось создать бэкап файла: /etc/ssh/sshd_config"
+        rm -f "$DESIRED"
+        exit 1
+    fi
+    logd "Бэкап конфигурации сохранен: $SSH_CONFIG_BACKUP"
+    made_backup=1
+    cat "$DESIRED" > /etc/ssh/sshd_config
+    rm -f "$DESIRED"
+    need_restart=1
+
+    logr "Проверяем конфигурацию SSH..."
+    if ! sshd -t; then
+        logerr "Конфигурация SSH недействительна. Возвращаю $SSH_CONFIG_BACKUP"
+        cp "$SSH_CONFIG_BACKUP" /etc/ssh/sshd_config
+        exit 1
+    fi
+fi
+
+if [ -n "$current_port" ] && [ "$current_port" != "$SSH_PORT" ]; then
+    logwarn "Порт SSH сменится с ${current_port} на ${SSH_PORT}. Текущая сессия оборвётся"
+    need_restart=1
+elif command -v ss >/dev/null 2>&1 && ! ss -lnt | awk '{ print $4 }' | grep -Eq "(^|:)${SSH_PORT}$"; then
+    logr "sshd ещё не слушает порт ${SSH_PORT}"
+    need_restart=1
+fi
+
+if [ "$need_restart" -eq 0 ]; then
+    logok "Настройка SSH-сервера уже применена, перезапуск не нужен
+----------------------------------------
+Порт SSH: $SSH_PORT
+----------------------------------------
+"
+    exit 0
 fi
 
 if systemctl cat ssh.service >/dev/null 2>&1; then
@@ -88,7 +135,7 @@ logok "Настройка SSH-сервера завершена
 Порт SSH: $SSH_PORT
 Вход root по SSH: запрещён (check: ${permit_root})
 Двухфакторная аутентификация: RSA ключ + пароль
-Бэкап конфигурации: $SSH_CONFIG_BACKUP
+Бэкап конфигурации: $( [ "$made_backup" -eq 1 ] && printf '%s' "$SSH_CONFIG_BACKUP" || printf '%s' "не создавался" )
 ----------------------------------------
 "
 

@@ -2,10 +2,9 @@
 set -euo pipefail
 . "$(dirname -- "$0")/../common/_misc.sh" # load misc
 
-# Скрипт выполняет получение нового сертификата в два этапа:
-# - dry-run проверка получения сертификата
-# - получение сертификата
-# После получения сертификата будет создан шаблонный nginx конфиг для этого сертификата
+# Сертификат домена запрашивается один раз.
+# Конфиг nginx затирается только если файла ещё нет или задан FORCE_NGINX=1.
+# Файл с правками вне блока sst не трогается.
 
 checkRoot
 
@@ -13,41 +12,46 @@ loghead "Получение SSL сертификата"
 
 DOMAIN=${DOMAIN:-}
 if [ -z "$DOMAIN" ]; then
-    read -p "Введите один домен: " DOMAIN
+    if [ -t 0 ]; then
+        read -r -p "Введите один домен: " DOMAIN
+    fi
 fi
-if [ -z "$DOMAIN" ]; then
+if [ -z "$DOMAIN" ] || [[ "$DOMAIN" == */* ]]; then
     logerr "Название домена не может быть пустым"
     exit 1
 fi
 
-logr "Проверка получения сертификата для домена: $DOMAIN"
-certbot certonly --dry-run --nginx -d "$DOMAIN"
-
-logr "Получение SSL сертификата для домена: $DOMAIN"
-certbot certonly --nginx -d "$DOMAIN"
-
-logr "Создается шаблонный конфиг nginx для нового домена: $DOMAIN"
-FILE=/etc/nginx/conf.d/${DOMAIN}.conf
-mkdir -p /etc/nginx/snippets
-if [ ! -e /etc/nginx/snippets/sst-errors.conf ]; then
-    : > /etc/nginx/snippets/sst-errors.conf
+CERT="/etc/letsencrypt/live/${DOMAIN}/fullchain.pem"
+if [ -f "$CERT" ]; then
+    logok "Сертификат уже есть: $DOMAIN"
+else
+    logr "Проверка получения сертификата для домена: $DOMAIN"
+    if ! certbot certonly --dry-run --nginx -d "$DOMAIN"; then
+        logerr "Проверка certbot не прошла: $DOMAIN"
+        exit 1
+    fi
+    logr "Получение SSL сертификата для домена: $DOMAIN"
+    if ! certbot certonly --nginx -d "$DOMAIN"; then
+        logerr "Не удалось получить сертификат: $DOMAIN"
+        exit 1
+    fi
 fi
-TMP=$(mktemp)
-cat > "$TMP" <<EOF
-# Location: $FILE
-# Author: $(whoami)
-# Created: $(timestamp)
+
+FILE=/etc/nginx/conf.d/${DOMAIN}.conf
+BLOCK_NAME="nginx-${DOMAIN}"
+BEGIN="# BEGIN sst ${BLOCK_NAME}"
+BODY=$(cat <<EOF
 server {
     listen 443 ssl;
-    server_name $DOMAIN;
+    server_name ${DOMAIN};
 
     include /etc/nginx/snippets/sst-errors.conf;
 
     ssl_session_cache         shared:SSL:10m;
     ssl_session_timeout       10m; # default 5m
     ssl_prefer_server_ciphers on;
-    ssl_certificate           /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
-    ssl_certificate_key       /etc/letsencrypt/live/$DOMAIN/privkey.pem;
+    ssl_certificate           /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+    ssl_certificate_key       /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
     ssl_protocols             TLSv1.2 TLSv1.3;
     ssl_ciphers               RC4:HIGH:!aNULL:!MD5:!kEDH;
 
@@ -87,12 +91,55 @@ server {
     }
 }
 EOF
+)
+
+if [ -f "$FILE" ] && [ "${FORCE_NGINX:-}" != "1" ]; then
+    current=""
+    if grep -Fxq "$BEGIN" "$FILE"; then
+        current=$(awk -v b="$BEGIN" -v e="# END sst ${BLOCK_NAME}" '
+            $0 == b { grab = 1; next }
+            $0 == e { grab = 0; next }
+            grab { print }
+        ' "$FILE")
+    fi
+    outside=$(awk -v b="$BEGIN" -v e="# END sst ${BLOCK_NAME}" '
+        $0 == b { skip = 1; next }
+        $0 == e { skip = 0; next }
+        skip { next }
+        { print }
+    ' "$FILE")
+    outside_compact=$(printf '%s' "$outside" | tr -d '[:space:]')
+    if [ "$current" = "$BODY" ] && [ -z "$outside_compact" ]; then
+        logok "Конфиг nginx уже совпадает: $FILE"
+        exit 0
+    fi
+    if [ -n "$outside_compact" ]; then
+        logwarn "Конфиг $FILE изменён вне блока sst, не трогаю. Для замены: FORCE_NGINX=1"
+    else
+        logwarn "Конфиг $FILE уже есть и отличается от шаблона, не трогаю. Для замены: FORCE_NGINX=1"
+    fi
+    exit 0
+fi
+if [ -f "$FILE" ]; then
+    logr "FORCE_NGINX=1, конфиг будет заменён: $FILE"
+fi
+
+logr "Создается шаблонный конфиг nginx для нового домена: $DOMAIN"
+mkdir -p /etc/nginx/snippets /etc/nginx/conf.d
+if [ ! -e /etc/nginx/snippets/sst-errors.conf ]; then
+    : > /etc/nginx/snippets/sst-errors.conf
+fi
+
 BACKUP=""
 if [ -f "$FILE" ]; then
     BACKUP=$(mktemp)
     cp "$FILE" "$BACKUP"
 fi
-cp "$TMP" "$FILE"
+{
+    printf '%s\n' "$BEGIN"
+    printf '%s\n' "$BODY"
+    printf '%s\n' "# END sst ${BLOCK_NAME}"
+} > "$FILE"
 if ! nginx -t; then
     logerr "nginx -t не прошёл, конфиг $FILE не оставлен"
     if [ -n "$BACKUP" ]; then
@@ -100,10 +147,10 @@ if ! nginx -t; then
     else
         rm -f "$FILE"
     fi
-    rm -f "$TMP" ${BACKUP:+"$BACKUP"}
+    rm -f ${BACKUP:+"$BACKUP"}
     exit 1
 fi
-rm -f "$TMP" ${BACKUP:+"$BACKUP"}
+rm -f ${BACKUP:+"$BACKUP"}
 if ! nginx -s reload; then
     logerr "Не удалось перечитать nginx"
     exit 1

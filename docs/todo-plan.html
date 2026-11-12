@@ -561,7 +561,7 @@ details.ticket > summary .status { margin-left: auto; }
       <a href="#SRV-017"><i class="ball ball-done"></i><span class="menu-id">SRV-017</span><span class="menu-title">Написать первый README</span></a>
       <p class="menu-phase">5. Оставшиеся задачи</p>
       <a href="#SRV-018"><i class="ball ball-done"></i><span class="menu-id">SRV-018</span><span class="menu-title">Проверить пошаговое выполнение скриптов</span></a>
-      <a href="#SRV-019"><i class="ball ball-ready"></i><span class="menu-id">SRV-019</span><span class="menu-title">Повторный запуск без поломки системы</span></a>
+      <a href="#SRV-019"><i class="ball ball-done"></i><span class="menu-id">SRV-019</span><span class="menu-title">Повторный запуск без поломки системы</span></a>
       <a href="#SRV-020"><i class="ball ball-ready"></i><span class="menu-id">SRV-020</span><span class="menu-title">Батч-скрипт: выбор, вопросы, стоп на ошибке</span></a>
       <a href="#SRV-021"><i class="ball ball-ready"></i><span class="menu-id">SRV-021</span><span class="menu-title">Пресеты для запуска без участия пользователя</span></a>
       <a href="#SRV-022"><i class="ball ball-ready"></i><span class="menu-id">SRV-022</span><span class="menu-title">Подробно описать в README работу каждого скрипта</span></a>
@@ -576,7 +576,7 @@ details.ticket > summary .status { margin-left: auto; }
       <main class="wrap">
         <section class="how" id="how-to-read">
           <h2>Как читать</h2>
-          <p>План идёт сверху вниз, номера совпадают с порядком работы. Описание тикета свёрнуто и открывается по заголовку. Зелёный шарик — выполнено. Жёлтый — задачу можно делать, отдельного статуса «в работе» нет. Красный — задачу блокируют другие. В меню текущий пункт жирный, уже пройденные светлее. Следующий шаг — <a href="#SRV-019">SRV-019</a>. <a href="#SRV-023">SRV-023</a> можно делать параллельно после <a href="#SRV-008">SRV-008</a>. <a href="#SRV-025">SRV-025</a> и <a href="#SRV-026">SRV-026</a> можно делать сейчас: они опираются на уже сделанный <a href="#SRV-024">SRV-024</a>.</p>
+          <p>План идёт сверху вниз, номера совпадают с порядком работы. Описание тикета свёрнуто и открывается по заголовку. Зелёный шарик — выполнено. Жёлтый — задачу можно делать, отдельного статуса «в работе» нет. Красный — задачу блокируют другие. В меню текущий пункт жирный, уже пройденные светлее. Следующий шаг — <a href="#SRV-020">SRV-020</a>. <a href="#SRV-023">SRV-023</a> можно делать параллельно после <a href="#SRV-008">SRV-008</a>. <a href="#SRV-025">SRV-025</a> и <a href="#SRV-026">SRV-026</a> можно делать сейчас: они опираются на уже сделанный <a href="#SRV-024">SRV-024</a>.</p>
           <p class="how-counts">
             <span><i class="ball ball-done"></i>Выполнено <b data-count="done">0</b></span>
             <span><i class="ball ball-ready"></i>Можно делать <b data-count="ready">0</b></span>
@@ -1344,12 +1344,12 @@ details.ticket > summary .status { margin-left: auto; }
     </ul>
         </div>
       </details>
-      <details class="ticket" id="SRV-019" data-status="ready">
+      <details class="ticket" id="SRV-019" data-status="done">
         <summary>
-          <i class="ball ball-ready"></i>
+          <i class="ball ball-done"></i>
           <span class="id">SRV-019</span>
           <span class="ticket-title">Повторный запуск без поломки системы</span>
-          <span class="status">Можно делать</span>
+          <span class="status">Выполнено</span>
         </summary>
         <div class="ticket-body">
 <p class="meta">
@@ -1360,7 +1360,7 @@ details.ticket > summary .status { margin-left: auto; }
     <h2>Зачем</h2>
     <p>Если скрипт оборвался на середине, пользователь запускает его ещё раз. Второй прогон должен доделать недостающее и не дублировать правила, строки конфигов и пользователей.</p>
 
-    <div class="note note-ok">Нереализуемых скриптов нет. Каждый текущий файл можно научить смотреть состояние и продолжать. Ниже по каждому файлу: что будет при повторном запуске сегодня и что сделать.</div>
+    <div class="note note-ok">Колонка «Что сделать» перенесена в скрипты. Два полных прогона подряд на Ubuntu 22.04 и 24.04 отсюда не запускались: нет ВМ. Повтор блоков, конфига SSH и набора iptables проверен локально на примерах файлов.</div>
 
     <h2>Общие приёмы</h2>
     <ul>

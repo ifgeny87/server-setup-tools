@@ -4,6 +4,7 @@ set -euo pipefail
 
 # Запускать после 1-server-setup/15-secure-firewall.sh:
 # монитор читает строки с префиксом FIREWALL DROP.
+# Повтор переписывает unit только если текст изменился и тогда же перезапускает таймер.
 
 checkRoot
 
@@ -20,19 +21,30 @@ if [ -z "${TELEGRAM_API_TOKEN:-}" ] || [ -z "${TELEGRAM_CHAT_ID:-}" ]; then
 fi
 
 loghead "Монитор firewall в Telegram"
-logr "Ставим пакеты для монитора"
-export DEBIAN_FRONTEND=noninteractive
-apt-get update -y
-apt-get install -yy python3 python3-requests python3-dotenv
+
+need_install=0
+for pkg in python3 python3-requests python3-dotenv; do
+    if ! dpkg -s "$pkg" >/dev/null 2>&1; then
+        need_install=1
+    fi
+done
+if [ "$need_install" -eq 0 ]; then
+    logok "Пакеты монитора уже установлены"
+else
+    logr "Ставим пакеты для монитора"
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update -y
+    apt-get install -yy python3 python3-requests python3-dotenv
+fi
 
 logr "Настраиваем автозапуск"
 
 LOG_MONITOR="/usr/local/bin/firewall-monitor.py"
 TIMER_FILE="/etc/systemd/system/firewall-monitor.timer"
 MONITOR_SERVICE="/etc/systemd/system/firewall-monitor.service"
+changed=0
 
-# --- Python монитор логов ---
-cat > "$LOG_MONITOR" <<EOF
+sst_write_if_changed "$LOG_MONITOR" <<EOF
 #!/usr/bin/env python3
 import os, re, requests
 from dotenv import load_dotenv, dotenv_values
@@ -80,12 +92,10 @@ def main():
                 send_message(f"Попытка подключения: {src} -> {dst}:{port}")
 main()
 EOF
-
+[ "$SST_FILE_CHANGED" = 1 ] && changed=1
 chmod +x "$LOG_MONITOR"
 
-# --- systemd units для мониторинга ---
-
-cat > "$MONITOR_SERVICE" <<EOF
+sst_write_if_changed "$MONITOR_SERVICE" <<EOF
 [Unit]
 Description=Firewall Log Monitor to Telegram
 
@@ -93,9 +103,9 @@ Description=Firewall Log Monitor to Telegram
 Type=oneshot
 ExecStart=$LOG_MONITOR
 EOF
+[ "$SST_FILE_CHANGED" = 1 ] && changed=1
 
-
-cat > "$TIMER_FILE" <<EOF
+sst_write_if_changed "$TIMER_FILE" <<EOF
 [Unit]
 Description=Periodic firewall log check
 
@@ -106,9 +116,23 @@ OnUnitActiveSec=30s
 [Install]
 WantedBy=timers.target
 EOF
+[ "$SST_FILE_CHANGED" = 1 ] && changed=1
 
 systemctl daemon-reload
 systemctl enable firewall-monitor.timer
-systemctl start firewall-monitor.timer
+if [ "$changed" -eq 1 ]; then
+    logr "Текст монитора изменился, перезапускаем таймер"
+    if ! systemctl restart firewall-monitor.timer; then
+        logerr "Не удалось перезапустить firewall-monitor.timer"
+        exit 1
+    fi
+elif ! systemctl is-active --quiet firewall-monitor.timer; then
+    if ! systemctl start firewall-monitor.timer; then
+        logerr "Не удалось запустить firewall-monitor.timer"
+        exit 1
+    fi
+else
+    logr "Таймер уже запущен, restart не нужен"
+fi
 
 logok "Telegram уведомления будут отправляться при попытках доступа на запрещённые порты"
