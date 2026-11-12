@@ -318,6 +318,9 @@ run_steps() {
             echo
         fi
         started=1
+        if [ "$(basename -- "$path")" = "13-ssh-restrict.sh" ]; then
+            logwarn "Сейчас сменится порт SSH на ${SSH_PORT:-порт из .env}. Текущая сессия оборвётся"
+        fi
         log "# $(basename -- "$path")"
         set +e
         if [ "${step_user[$i]}" = 1 ]; then
@@ -380,8 +383,6 @@ main() {
         fi
     fi
 
-    checkRoot
-
     local env_file="$ROOT/.env"
     if [ ! -f "$env_file" ]; then
         logerr "Файл $env_file не найден!"
@@ -395,7 +396,18 @@ main() {
     fi
     load_preset "$preset_arg"
 
-    if [ -t 0 ] && [ "$yes" -ne 1 ]; then
+    # Без вопросов не хватающую переменную сообщаем до root и до первого скрипта.
+    local skip_menu=0
+    if [ ! -t 0 ] || [ "$yes" -eq 1 ]; then
+        skip_menu=1
+    fi
+    if [ "$skip_menu" -eq 1 ] && { [ "$preset_interactive" = "no" ] || [ ! -t 0 ]; }; then
+        collect_needs || exit 1
+    fi
+
+    checkRoot
+
+    if [ "$skip_menu" -ne 1 ]; then
         local menu_status=0
         if confirm_steps; then
             menu_status=0
@@ -410,7 +422,7 @@ main() {
         fi
     fi
 
-    collect_needs
+    collect_needs || exit 1
 
     if [ "$(enabled_count)" -eq 0 ]; then
         log "Нет отмеченных шагов"

@@ -563,7 +563,7 @@ details.ticket > summary .status { margin-left: auto; }
       <a href="#SRV-018"><i class="ball ball-done"></i><span class="menu-id">SRV-018</span><span class="menu-title">Проверить пошаговое выполнение скриптов</span></a>
       <a href="#SRV-019"><i class="ball ball-done"></i><span class="menu-id">SRV-019</span><span class="menu-title">Повторный запуск без поломки системы</span></a>
       <a href="#SRV-020"><i class="ball ball-done"></i><span class="menu-id">SRV-020</span><span class="menu-title">Батч-скрипт: выбор, вопросы, стоп на ошибке</span></a>
-      <a href="#SRV-021"><i class="ball ball-ready"></i><span class="menu-id">SRV-021</span><span class="menu-title">Пресеты для запуска без участия пользователя</span></a>
+      <a href="#SRV-021"><i class="ball ball-done"></i><span class="menu-id">SRV-021</span><span class="menu-title">Пресеты для запуска без участия пользователя</span></a>
       <a href="#SRV-022"><i class="ball ball-ready"></i><span class="menu-id">SRV-022</span><span class="menu-title">Подробно описать в README работу каждого скрипта</span></a>
       <a href="#SRV-023"><i class="ball ball-ready"></i><span class="menu-id">SRV-023</span><span class="menu-title">Интерактивное управление форвардом iptables</span></a>
       <a href="#SRV-024"><i class="ball ball-done"></i><span class="menu-id">SRV-024</span><span class="menu-title">Кастомные страницы ошибок nginx</span></a>
@@ -576,7 +576,7 @@ details.ticket > summary .status { margin-left: auto; }
       <main class="wrap">
         <section class="how" id="how-to-read">
           <h2>Как читать</h2>
-          <p>План идёт сверху вниз, номера совпадают с порядком работы. Описание тикета свёрнуто и открывается по заголовку. Зелёный шарик — выполнено. Жёлтый — задачу можно делать, отдельного статуса «в работе» нет. Красный — задачу блокируют другие. В меню текущий пункт жирный, уже пройденные светлее. Следующий шаг — <a href="#SRV-021">SRV-021</a>. <a href="#SRV-023">SRV-023</a> можно делать параллельно после <a href="#SRV-008">SRV-008</a>. <a href="#SRV-025">SRV-025</a> и <a href="#SRV-026">SRV-026</a> можно делать сейчас: они опираются на уже сделанный <a href="#SRV-024">SRV-024</a>.</p>
+          <p>План идёт сверху вниз, номера совпадают с порядком работы. Описание тикета свёрнуто и открывается по заголовку. Зелёный шарик — выполнено. Жёлтый — задачу можно делать, отдельного статуса «в работе» нет. Красный — задачу блокируют другие. В меню текущий пункт жирный, уже пройденные светлее. Следующий шаг — <a href="#SRV-022">SRV-022</a>. <a href="#SRV-023">SRV-023</a> можно делать параллельно после <a href="#SRV-008">SRV-008</a>. <a href="#SRV-025">SRV-025</a> и <a href="#SRV-026">SRV-026</a> можно делать сейчас: они опираются на уже сделанный <a href="#SRV-024">SRV-024</a>.</p>
           <p class="how-counts">
             <span><i class="ball ball-done"></i>Выполнено <b data-count="done">0</b></span>
             <span><i class="ball ball-ready"></i>Можно делать <b data-count="ready">0</b></span>
@@ -766,10 +766,10 @@ details.ticket > summary .status { margin-left: auto; }
     <ol>
       <li>Файл <code>1-server-setup/12-add-user.sh</code>. <code>checkRoot</code>, <code>loadEnv</code>. Пустые <code>SSH_GROUP</code> или <code>USER_GROUPS</code> — <code>[ERROR]</code> и выход.</li>
       <li>Группу <code>SSH_GROUP</code> создать через <code>groupadd</code>, если <code>getent group</code> её не видит.</li>
-      <li>Имя взять из <code>NEWUSERNAME</code>. Если переменной нет — спросить обычным <code>read -p</code>, без цветовой метки. Пустое имя — <code>[ERROR]</code>.</li>
+      <li>Имя взять из <code>NEW_USER_LOGIN</code>. Если переменной нет — спросить обычным <code>read -p</code>, без цветовой метки. Пустое имя — <code>[ERROR]</code>.</li>
       <li>Пользователь уже есть (<code>id</code>) — <code>[ERROR]</code> и выход. Иначе <code>adduser --disabled-password --gecos ""</code>. Сбой команды — <code>[ERROR]</code> через <code>if !</code>.</li>
       <li>Для каждой группы из <code>USER_GROUPS</code> выполнить <code>usermod -aG</code>. Сбой — <code>[ERROR]</code>.</li>
-      <li>Ключ взять из <code>SSH_KEY</code>. Если пусто — спросить одной строкой. Принимать строку, которая начинается с <code>ssh-</code>, пробела и данных ключа. Иначе <code>[ERROR]</code>.</li>
+      <li>Ключ взять из <code>NEW_USER_SSH_KEY</code>. Если пусто — спросить одной строкой. Принимать строку, которая начинается с <code>ssh-</code>, пробела и данных ключа. Иначе <code>[ERROR]</code>.</li>
       <li>Записать ключ в <code>/home/&lt;имя&gt;/.ssh/authorized_keys</code>, каталог <code>700</code>, файл <code>600</code>, владелец — новый пользователь. Любой сбой этой цепочки — <code>[ERROR]</code>.</li>
       <li><code>logok</code> с напоминанием выполнить <code>passwd</code> отдельно: пароль этот скрипт не ставит.</li>
     </ol>
@@ -777,7 +777,7 @@ details.ticket > summary .status { margin-left: auto; }
 
     <h2>Готово, когда</h2>
     <ul>
-      <li>С заданными <code>NEWUSERNAME</code> и <code>SSH_KEY</code> появляется пользователь без пароля, он входит в <code>USER_GROUPS</code>, ключ лежит в <code>authorized_keys</code>.</li>
+      <li>С заданными <code>NEW_USER_LOGIN</code> и <code>NEW_USER_SSH_KEY</code> появляется пользователь без пароля, он входит в <code>USER_GROUPS</code>, ключ лежит в <code>authorized_keys</code>.</li>
       <li>Пустое имя и ключ не в формате <code>ssh-</code> дают <code>[ERROR]</code> и код 1.</li>
     </ul>
         </div>
@@ -1219,7 +1219,7 @@ details.ticket > summary .status { margin-left: auto; }
       <li>В начале: ссылка на репозиторий, версия, команды <code>apt-get install git</code> и <code>git clone</code> в <code>/opt</code>.</li>
       <li>Описать цель: безопасный SSH, ограничение портов, быстрая подготовка VPS. Указать, что прогон проверялся на Ubuntu 22 и 24.</li>
       <li>Перечислить четыре группы каталогов и подробно расписать скрипты <code>10</code>–<code>15</code>: что делают, какие переменные <code>.env</code> читают, команда запуска.</li>
-      <li>Для <code>12-add-user.sh</code> показать пример <code>NEWUSERNAME</code> и <code>SSH_KEY</code>.</li>
+      <li>Для <code>12-add-user.sh</code> показать пример <code>NEW_USER_LOGIN</code> и <code>NEW_USER_SSH_KEY</code>.</li>
       <li>После папки 1 написать, что сервер можно перезагрузить.</li>
       <li>Скрипты <code>20</code>–<code>24</code>, <code>30</code> и <code>41</code> пока только назвать. Для <code>40-firewall-monitor.sh</code> коротко описать Telegram и интервал 30 секунд.</li>
       <li>Добавить локальную проверку через <code>docker run -it --rm ubuntu /bin/bash</code>.</li>
@@ -1390,7 +1390,7 @@ details.ticket > summary .status { margin-left: auto; }
         <tr>
           <td><code>12-add-user.sh</code></td>
           <td>Повтор невозможен. Если пользователь есть, скрипт делает <code>[ERROR]</code> и выходит, даже когда в прошлый раз не записался ключ.</td>
-          <td>Реализуемо. Пользователь есть — не создавать заново и не падать. Группы добавить, если их нет в <code>id</code>. Пустой <code>SSH_KEY</code> при уже настроенном <code>authorized_keys</code> — пропуск. Ключ передан — дописать строку, если такой строки ещё нет, не затирать чужие ключи. Пользователь создан, каталога <code>.ssh</code> нет — продолжить с ключа.</td>
+          <td>Реализуемо. Пользователь есть — не создавать заново и не падать. Группы добавить, если их нет в <code>id</code>. Пустой <code>NEW_USER_SSH_KEY</code> при уже настроенном <code>authorized_keys</code> — пропуск. Ключ передан — дописать строку, если такой строки ещё нет, не затирать чужие ключи. Пользователь создан, каталога <code>.ssh</code> нет — продолжить с ключа.</td>
         </tr>
         <tr>
           <td><code>13-ssh-restrict.sh</code></td>
@@ -1514,7 +1514,7 @@ Enter — выполнить отмеченные, номер — переклю
         <tr><th>Шаг</th><th>Переменная</th><th>Куда попадает</th></tr>
       </thead>
       <tbody>
-        <tr><td><code>12-add-user.sh</code></td><td><code>NEWUSERNAME</code>, <code>SSH_KEY</code></td><td>скрипт уже читает их из окружения и не спрашивает сам, если они заданы</td></tr>
+        <tr><td><code>12-add-user.sh</code></td><td><code>NEW_USER_LOGIN</code>, <code>NEW_USER_SSH_KEY</code></td><td>скрипт уже читает их из окружения и не спрашивает сам, если они заданы</td></tr>
         <tr><td><code>21-install-node.sh</code></td><td><code>VERSION</code></td><td>по умолчанию 25, вопрос с этим значением в скобках</td></tr>
         <tr><td><code>22</code></td><td>нет</td><td>дистрибутив определяется сам</td></tr>
         <tr><td><code>24-install-nginx-certbot.sh</code></td><td><code>CERTBOT_EMAIL</code></td><td>после правки SRV-018 / SRV-019</td></tr>
@@ -1553,12 +1553,12 @@ Enter — выполнить отмеченные, номер — переклю
     </ul>
         </div>
       </details>
-      <details class="ticket" id="SRV-021" data-status="ready">
+      <details class="ticket" id="SRV-021" data-status="done">
         <summary>
-          <i class="ball ball-ready"></i>
+          <i class="ball ball-done"></i>
           <span class="id">SRV-021</span>
           <span class="ticket-title">Пресеты для запуска без участия пользователя</span>
-          <span class="status">Можно делать</span>
+          <span class="status">Выполнено</span>
         </summary>
         <div class="ticket-body">
 <p class="meta">
@@ -1568,7 +1568,7 @@ Enter — выполнить отмеченные, номер — переклю
 
     <h2>Зачем</h2>
     <p>Авторазвёртывание не может отвечать на вопросы. Пресет — это инструкция батчу: какие скрипты, в каком порядке, какие переменные обязательны, можно ли спрашивать человека.</p>
-    <div class="note"><code>batch/presets/default.conf</code> уже добавлен в SRV-020. Маска <code>batch/presets/*.local</code> уже в <code>.gitignore</code>. Осталось добавить <code>unattended-server</code> и <code>unattended-web</code>.</div>
+    <div class="note note-ok">Пресеты <code>unattended-server</code> и <code>unattended-web</code> добавлены. Список, отказ без <code>NEW_USER_LOGIN</code> и очередь без вопросов проверены локально. Полный прогон apt на Ubuntu не запускался.</div>
 
     <h2>Формат</h2>
     <p>Один пресет — один файл <code>batch/presets/&lt;id&gt;.conf</code>. Парсер на bash, без yq и python. Поля:</p>
@@ -1579,7 +1579,7 @@ Enter — выполнить отмеченные, номер — переклю
       <li><code>STEP &lt;путь от корня репозитория&gt;</code> — по порядку. Необязательный суффикс <code>user</code> означает запуск от <code>TARGET_USER</code>.</li>
       <li><code>NEED &lt;ПЕРЕМЕННАЯ&gt;</code> — относится к предыдущему <code>STEP</code>. Необязательный <code>prompt="текст"</code> — вопрос в режиме <code>prompt</code>. В режиме <code>no</code> текст не используется: переменная должна быть уже экспортирована.</li>
     </ul>
-    <p>Секреты в файл пресета в репозитории не писать. <code>SSH_KEY</code> приходит из окружения процесса. Локальные значения, если их неудобно экспортировать руками, класть в <code>batch/presets/*.local</code> и добавить маску в <code>.gitignore</code>. В git остаются только инструкции без ключей.</p>
+    <p>Секреты в файл пресета в репозитории не писать. <code>NEW_USER_SSH_KEY</code> приходит из окружения процесса. Локальные значения, если их неудобно экспортировать руками, класть в <code>batch/presets/*.local</code> и добавить маску в <code>.gitignore</code>. В git остаются только инструкции без ключей.</p>
 
     <h2>Пресет default</h2>
     <p>Это набор, который батч предлагает первым. Он интерактивный и покрывает базовую подготовку из папки 1, в том порядке, который останется после SRV-018 (fail2ban не должен терять цепочки из-за последующего flush INPUT).</p>
@@ -1590,8 +1590,8 @@ INTERACTIVE=prompt
 STEP 1-server-setup/10-prepare-tools.sh
 STEP 1-server-setup/11-remove-mail-server.sh
 STEP 1-server-setup/12-add-user.sh
-NEED NEWUSERNAME prompt="Имя нового пользователя"
-NEED SSH_KEY prompt="Публичный SSH-ключ"
+NEED NEW_USER_LOGIN prompt="Логин нового пользователя"
+NEED NEW_USER_SSH_KEY prompt="Публичный SSH-ключ нового пользователя"
 STEP 1-server-setup/13-ssh-restrict.sh
 STEP 1-server-setup/14-install-fail2ban.sh
 STEP 1-server-setup/15-secure-firewall.sh</code></pre>
@@ -1606,13 +1606,13 @@ INTERACTIVE=no
 STEP 1-server-setup/10-prepare-tools.sh
 STEP 1-server-setup/11-remove-mail-server.sh
 STEP 1-server-setup/12-add-user.sh
-NEED NEWUSERNAME
-NEED SSH_KEY
+NEED NEW_USER_LOGIN
+NEED NEW_USER_SSH_KEY
 STEP 1-server-setup/13-ssh-restrict.sh
 STEP 1-server-setup/14-install-fail2ban.sh
 STEP 1-server-setup/15-secure-firewall.sh</code></pre>
-    <pre><code>export NEWUSERNAME=deploy
-export SSH_KEY='ssh-ed25519 AAAA... deploy@host'
+    <pre><code>export NEW_USER_LOGIN=deploy
+export NEW_USER_SSH_KEY='ssh-ed25519 AAAA... deploy@host'
 sudo -E ./batch/run.sh --preset unattended-server --yes</code></pre>
     <p><code>sudo -E</code> нужен, чтобы ключ и имя дошли до скрипта. Если переменной нет, батч пишет <code>[ERROR]</code> и не вызывает скрипт 10.</p>
     <p>Перед шагом 13 батч в этом пресете всё равно печатает <code>[WARN]</code>: сейчас будет смена порта SSH из <code>.env</code>, сессия оборвётся. Это предупреждение, не вопрос. Для автоустановки на ВМ с консолью этого достаточно. Для машины, где SSH — единственный вход, в README (SRV-022) написать, что порт в <code>.env</code> надо выставить до прогона и иметь второй канал.</p>
@@ -1626,8 +1626,8 @@ INTERACTIVE=no
 STEP 1-server-setup/10-prepare-tools.sh
 STEP 1-server-setup/11-remove-mail-server.sh
 STEP 1-server-setup/12-add-user.sh
-NEED NEWUSERNAME
-NEED SSH_KEY
+NEED NEW_USER_LOGIN
+NEED NEW_USER_SSH_KEY
 STEP 1-server-setup/13-ssh-restrict.sh
 STEP 1-server-setup/14-install-fail2ban.sh
 STEP 1-server-setup/15-secure-firewall.sh
@@ -1643,7 +1643,7 @@ STEP 4-services/43-nginx-error-pages.sh</code></pre>
     <h2>Готово, когда</h2>
     <ul>
       <li><code>./batch/run.sh --list</code> показывает <code>default</code>, <code>unattended-server</code>, <code>unattended-web</code>.</li>
-      <li>Без <code>NEWUSERNAME</code> команда <code>--preset unattended-server --yes</code> выходит с <code>[ERROR]</code> до первого apt.</li>
+      <li>Без <code>NEW_USER_LOGIN</code> команда <code>--preset unattended-server --yes</code> выходит с <code>[ERROR]</code> до первого apt.</li>
       <li>С заданными переменными тот же пресет проходит очередь без единого <code>read</code>.</li>
       <li>В git нет файла пресета с реальным ключом.</li>
     </ul>

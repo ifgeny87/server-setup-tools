@@ -103,12 +103,12 @@ which sendmail mailx
 ```shell
 ./1-server-setup/12-add-user.sh
 
-# для автоматизации можно передать переменные окружения NEWUSERNAME и SSH_KEY
+# для автоматизации можно передать переменные окружения NEW_USER_LOGIN и NEW_USER_SSH_KEY
 # пример создания пользователя
-export NEWUSERNAME=user1
-export SSH_KEY="ssh-rsa AAAAB3NzaC1yc...eEbrpclt9PgVth1Aw== user@computer"
+export NEW_USER_LOGIN=user1
+export NEW_USER_SSH_KEY="ssh-rsa AAAAB3NzaC1yc...eEbrpclt9PgVth1Aw== user@computer"
 ./1-server-setup/12-add-user.sh
-passwd $NEWUSERNAME
+passwd $NEW_USER_LOGIN
 ```
 
 ### 13-ssh-restrict.sh
