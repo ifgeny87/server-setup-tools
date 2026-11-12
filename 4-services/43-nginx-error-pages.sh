@@ -1,26 +1,23 @@
 #!/bin/bash
 set -euo pipefail
-. "$(dirname -- "$0")/../common/_misc.sh" # load misc
+. "$(dirname -- "${BASH_SOURCE[0]}")/../common/_misc.sh" # load misc
 
-# Общая страница ошибок nginx. Запускать после 24-install-nginx-certbot.sh.
-# Повтор безопасен: include в server не дублируется.
+# Подменяет только тело выбранных кодов ошибок.
+# server со своим error_page не трогает. nginx -t не прошёл — конфиги, сниппет и страница возвращаются.
 
-checkRoot
+PAGE=${PAGE:-/var/www/nginx-errors/error.html}
+SNIPPET=${SNIPPET:-/etc/nginx/snippets/sst-errors.conf}
+NGINX_CONF_D=${NGINX_CONF_D:-/etc/nginx/conf.d}
+NGINX_SITES=${NGINX_SITES:-/etc/nginx/sites-enabled}
 
-if ! command -v nginx >/dev/null 2>&1; then
-    logerr "nginx не установлен. Сначала выполните 2-install-software/24-install-nginx-certbot.sh"
-    exit 1
-fi
+# Экранирует путь сниппета для поиска строки include.
+snippet_re() {
+    printf '%s' "$SNIPPET" | sed -e 's/[.[*^$()+?{|\\]/\\&/g'
+}
 
-loghead "Страницы ошибок nginx"
-
-PAGE=/var/www/nginx-errors/error.html
-SNIPPET=/etc/nginx/snippets/sst-errors.conf
-INCLUDE_LINE="include /etc/nginx/snippets/sst-errors.conf;"
-
-mkdir -p /var/www/nginx-errors /etc/nginx/snippets
-
-cat > "$PAGE" <<'EOF'
+write_error_page() {
+    mkdir -p "$(dirname -- "$PAGE")"
+    cat > "$PAGE" <<'EOF'
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -77,8 +74,11 @@ if (code) document.title = code;
 </body>
 </html>
 EOF
+}
 
-cat > "$SNIPPET" <<'EOF'
+write_snippet() {
+    mkdir -p "$(dirname -- "$SNIPPET")"
+    cat > "$SNIPPET" <<'EOF'
 error_page 400 =400 @sst_error;
 error_page 401 =401 @sst_error;
 error_page 403 =403 @sst_error;
@@ -104,31 +104,37 @@ location @sst_error {
     add_header Cache-Control "no-store" always;
 }
 EOF
+}
 
-# Вставляет include один раз в каждый server, если его там ещё нет.
+# Вставляет include один раз сразу после `server {`. Блок со своим error_page не меняет.
 add_error_include() {
     local src="$1"
-    local tmp
+    local tmp skip mark pre inc
     [ -f "$src" ] || return 0
+    pre=$(snippet_re)
+    inc="include ${SNIPPET};"
     tmp=$(mktemp)
-    awk '
+    mark=$(mktemp)
+    awk -v inc="$inc" -v pre="$pre" -v mark="$mark" '
         function opens(s,    t) { t = s; return gsub(/\{/, "{", t) }
         function closes(s,    t) { t = s; return gsub(/\}/, "}", t) }
         function emit(    i) {
             if (n == 0) return
-            if (has) {
+            if (has || own) {
                 for (i = 1; i <= n; i++) print lines[i]
+                if (own) print "1" > mark
             } else {
                 print lines[1]
-                print "    include /etc/nginx/snippets/sst-errors.conf;"
+                print "    " inc
                 for (i = 2; i <= n; i++) print lines[i]
             }
             n = 0
             has = 0
+            own = 0
             in_server = 0
             depth = 0
         }
-        BEGIN { depth = 0; in_server = 0; n = 0; has = 0 }
+        BEGIN { depth = 0; in_server = 0; n = 0; has = 0; own = 0 }
         {
             o = opens($0)
             c = closes($0)
@@ -143,7 +149,8 @@ add_error_include() {
             if (in_server) {
                 n++
                 lines[n] = $0
-                if ($0 ~ /include[[:space:]]+\/etc\/nginx\/snippets\/sst-errors\.conf[[:space:]]*;/) has = 1
+                if ($0 ~ ("include[[:space:]]+" pre "[[:space:]]*;")) has = 1
+                if ($0 ~ /^[[:space:]]*error_page[[:space:]]/) own = 1
                 depth += o - c
                 if (depth <= 0) emit()
                 next
@@ -152,28 +159,97 @@ add_error_include() {
         }
         END { if (in_server) emit() }
     ' "$src" > "$tmp"
+    if [ -s "$mark" ]; then
+        logwarn "В $src уже есть error_page, этот server не меняю"
+    fi
     if ! cmp -s "$src" "$tmp"; then
+        local n=0
+        if [ -f "$BACKUP/count" ]; then
+            n=$(cat "$BACKUP/count")
+        fi
+        n=$((n + 1))
+        cp "$src" "$BACKUP/conf.$n"
+        printf '%s\n' "$src" > "$BACKUP/confpath.$n"
+        printf '%s\n' "$n" > "$BACKUP/count"
         cat "$tmp" > "$src"
         logr "Подключена страница ошибок: $src"
     fi
-    rm -f "$tmp"
+    rm -f "$tmp" "$mark"
 }
 
-shopt -s nullglob
-for conf in /etc/nginx/conf.d/*.conf /etc/nginx/sites-enabled/*; do
-    [ -f "$conf" ] || continue
-    add_error_include "$conf"
-done
-shopt -u nullglob
+# Возвращает конфиги, сниппет и страницу к состоянию до этой попытки.
+restore_setup() {
+    local n=0 i path
+    if [ -f "$BACKUP/count" ]; then
+        n=$(cat "$BACKUP/count")
+    fi
+    i=1
+    while [ "$i" -le "$n" ]; do
+        path=$(cat "$BACKUP/confpath.$i")
+        cat "$BACKUP/conf.$i" > "$path"
+        i=$((i + 1))
+    done
+    if [ "$HAD_SNIPPET" -eq 1 ]; then
+        mkdir -p "$(dirname -- "$SNIPPET")"
+        cat "$BACKUP/snippet" > "$SNIPPET"
+    else
+        rm -f "$SNIPPET"
+    fi
+    if [ "$HAD_PAGE" -eq 1 ]; then
+        mkdir -p "$(dirname -- "$PAGE")"
+        cat "$BACKUP/page" > "$PAGE"
+    else
+        rm -f "$PAGE"
+    fi
+}
 
-logr "Проверяем конфиг nginx..."
-if ! nginx -t; then
-    logerr "nginx -t не прошёл, reload не выполнен"
-    exit 1
-fi
-if ! nginx -s reload; then
-    logerr "Не удалось перечитать nginx"
-    exit 1
-fi
+main() {
+    local conf nullglob_was=0
+    checkRoot
+    if ! command -v nginx >/dev/null 2>&1; then
+        logerr "nginx не установлен. Сначала выполните 2-install-software/24-install-nginx-certbot.sh"
+        exit 1
+    fi
 
-logok "Страница ошибок nginx: $PAGE"
+    loghead "Страницы ошибок nginx"
+
+    BACKUP=$(mktemp -d)
+    HAD_PAGE=0
+    HAD_SNIPPET=0
+    if [ -f "$PAGE" ]; then
+        cp "$PAGE" "$BACKUP/page"
+        HAD_PAGE=1
+    fi
+    if [ -f "$SNIPPET" ]; then
+        cp "$SNIPPET" "$BACKUP/snippet"
+        HAD_SNIPPET=1
+    fi
+
+    write_error_page
+    write_snippet
+
+    shopt -q nullglob && nullglob_was=1
+    shopt -s nullglob
+    for conf in "$NGINX_CONF_D"/*.conf "$NGINX_SITES"/*; do
+        [ -f "$conf" ] || continue
+        add_error_include "$conf"
+    done
+    [ "$nullglob_was" -eq 0 ] && shopt -u nullglob
+
+    if ! nginx -t; then
+        restore_setup
+        rm -rf "$BACKUP"
+        logerr "nginx -t не прошёл, reload не выполнен"
+        exit 1
+    fi
+    rm -rf "$BACKUP"
+    if ! nginx -s reload; then
+        logerr "Не удалось перечитать nginx"
+        exit 1
+    fi
+    logok "Страница ошибок nginx: $PAGE"
+}
+
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+    main "$@"
+fi

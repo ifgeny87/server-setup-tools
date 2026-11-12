@@ -27,11 +27,11 @@ rm -f /etc/nginx/sites-enabled/default
 
 FILE=/etc/nginx/conf.d/default.conf
 logr "Проверяем дефолтный конфиг nginx: $FILE"
+# Страницы ошибок подключает только 4-services/43-nginx-error-pages.sh.
 DESIRED=$(cat <<EOF
 # BEGIN sst nginx-default
 server {
     listen 80;
-    include /etc/nginx/snippets/sst-errors.conf;
 
     location / {
         return 301 https://\$host\$request_uri;
@@ -42,8 +42,6 @@ server {
     listen 443 ssl http2 default_server;
     listen [::]:443 ssl http2 default_server;
 
-    include /etc/nginx/snippets/sst-errors.conf;
-
     ssl_certificate     /etc/nginx/ssl/default-reject.crt;
     ssl_certificate_key /etc/nginx/ssl/default-reject.key;
 
@@ -53,7 +51,7 @@ server {
 EOF
 )
 
-mkdir -p /etc/nginx/ssl /etc/nginx/snippets /etc/nginx/conf.d
+mkdir -p /etc/nginx/ssl /etc/nginx/conf.d
 if [ ! -f /etc/nginx/ssl/default-reject.crt ]; then
     logr "Создаём сертификат-заглушку для чужих доменов"
     if ! openssl req -x509 -nodes -newkey rsa:2048 -days 3650 \
@@ -63,9 +61,6 @@ if [ ! -f /etc/nginx/ssl/default-reject.crt ]; then
         logerr "Не удалось создать сертификат-заглушку"
         exit 1
     fi
-fi
-if [ ! -e /etc/nginx/snippets/sst-errors.conf ]; then
-    : > /etc/nginx/snippets/sst-errors.conf
 fi
 
 BACKUP=$(mktemp)

@@ -567,8 +567,8 @@ details.ticket > summary .status { margin-left: auto; }
       <a href="#SRV-022"><i class="ball ball-ready"></i><span class="menu-id">SRV-022</span><span class="menu-title">Подробно описать в README работу каждого скрипта</span></a>
       <a href="#SRV-023"><i class="ball ball-done"></i><span class="menu-id">SRV-023</span><span class="menu-title">Интерактивное управление форвардом iptables</span></a>
       <a href="#SRV-024"><i class="ball ball-done"></i><span class="menu-id">SRV-024</span><span class="menu-title">Кастомные страницы ошибок nginx</span></a>
-      <a href="#SRV-025"><i class="ball ball-ready"></i><span class="menu-id">SRV-025</span><span class="menu-title">Страницы ошибок не ломают штатный nginx</span></a>
-      <a href="#SRV-026"><i class="ball ball-ready"></i><span class="menu-id">SRV-026</span><span class="menu-title">Снять кастомные страницы ошибок nginx</span></a>
+      <a href="#SRV-025"><i class="ball ball-done"></i><span class="menu-id">SRV-025</span><span class="menu-title">Страницы ошибок не ломают штатный nginx</span></a>
+      <a href="#SRV-026"><i class="ball ball-done"></i><span class="menu-id">SRV-026</span><span class="menu-title">Снять кастомные страницы ошибок nginx</span></a>
       </div>
       <p class="menu-composed">📅 Проект открыт 06.11.2025</p>
     </nav>
@@ -576,7 +576,7 @@ details.ticket > summary .status { margin-left: auto; }
       <main class="wrap">
         <section class="how" id="how-to-read">
           <h2>Как читать</h2>
-          <p>План идёт сверху вниз, номера совпадают с порядком работы. Описание тикета свёрнуто и открывается по заголовку. Зелёный шарик — выполнено. Жёлтый — задачу можно делать, отдельного статуса «в работе» нет. Красный — задачу блокируют другие. В меню текущий пункт жирный, уже пройденные светлее. Следующий шаг — <a href="#SRV-022">SRV-022</a>. <a href="#SRV-025">SRV-025</a> и <a href="#SRV-026">SRV-026</a> можно делать сейчас: они опираются на уже сделанный <a href="#SRV-024">SRV-024</a>.</p>
+          <p>План идёт сверху вниз, номера совпадают с порядком работы. Описание тикета свёрнуто и открывается по заголовку. Зелёный шарик — выполнено. Жёлтый — задачу можно делать, отдельного статуса «в работе» нет. Красный — задачу блокируют другие. В меню текущий пункт жирный, уже пройденные светлее. Следующий шаг — <a href="#SRV-022">SRV-022</a>.</p>
           <p class="how-counts">
             <span><i class="ball ball-done"></i>Выполнено <b data-count="done">0</b></span>
             <span><i class="ball ball-ready"></i>Можно делать <b data-count="ready">0</b></span>
@@ -1888,17 +1888,17 @@ iptables -A FORWARD -p tcp -d "$SERVER_IP" --dport "$SERVER_SSH_PORT" \
       <li>Повторный запуск не добавляет второй <code>include</code> и заканчивается <code>[OK]</code>.</li>
       <li>Запрос несуществующего пути возвращает тот же код в статусе ответа и в теле страницы. В теле есть <code>nginx/</code> с версией, запрошенный URL и время в формате ISO.</li>
       <li>В <code>error.html</code> нет ссылок на картинки и нет правил анимации. Светлая и тёмная тема системы дают разные цвета текста и фона.</li>
-      <li>Новый конфиг из скрипта 41 уже содержит <code>include</code> сниппета.</li>
+      <li>Include в шаблоны 24 и 41 больше не входит: его ставит только скрипт 43, это <a href="#SRV-025">SRV-025</a>.</li>
     </ul>
-    <div class="note note-warn">Штатные ответы и чужой <code>error_page</code> — <a href="#SRV-025">SRV-025</a>. Снятие страниц — <a href="#SRV-026">SRV-026</a>.</div>
+    <div class="note note-ok">Чужой <code>error_page</code> и откат <code>nginx -t</code> закрыты в <a href="#SRV-025">SRV-025</a>. Снятие страниц — <a href="#SRV-026">SRV-026</a>.</div>
         </div>
       </details>
-      <details class="ticket" id="SRV-025" data-status="ready">
+      <details class="ticket" id="SRV-025" data-status="done">
         <summary>
-          <i class="ball ball-ready"></i>
+          <i class="ball ball-done"></i>
           <span class="id">SRV-025</span>
           <span class="ticket-title">Страницы ошибок не ломают штатный nginx</span>
-          <span class="status">Можно делать</span>
+          <span class="status">Выполнено</span>
         </summary>
         <div class="ticket-body">
 <p class="meta">
@@ -1935,14 +1935,15 @@ iptables -A FORWARD -p tcp -d "$SERVER_IP" --dport "$SERVER_SSH_PORT" \
       <li>Запрос существующего ресурса сохраняет прежний код и не отдаёт <code>error.html</code>. Запрос отсутствующего пути сохраняет код ошибки, не 200, и отдаёт <code>error.html</code>. Прямой запрос к <code>@sst_error</code> снаружи не обслуживается.</li>
       <li>Если в конфиг заранее положена синтаксическая ошибка, 43 возвращает файлы как было и не вызывает reload.</li>
     </ul>
+    <div class="note note-ok">Шаблоны 24 и 41 больше не знают про <code>sst-errors</code>. Пропуск чужого <code>error_page</code>, одна строка include и откат после неудачного <code>nginx -t</code> проверены на временных конфигах. Живой nginx и HTTP-запросы здесь не запускались.</div>
         </div>
       </details>
-      <details class="ticket" id="SRV-026" data-status="ready">
+      <details class="ticket" id="SRV-026" data-status="done">
         <summary>
-          <i class="ball ball-ready"></i>
+          <i class="ball ball-done"></i>
           <span class="id">SRV-026</span>
           <span class="ticket-title">Снять кастомные страницы ошибок nginx</span>
-          <span class="status">Можно делать</span>
+          <span class="status">Выполнено</span>
         </summary>
         <div class="ticket-body">
 <p class="meta">
@@ -1972,6 +1973,7 @@ iptables -A FORWARD -p tcp -d "$SERVER_IP" --dport "$SERVER_SSH_PORT" \
       <li>Сломанный конфиг, подготовленный до запуска, возвращается из копии, reload не выполняется.</li>
       <li>Сертификат <code>default-reject</code> и другие сниппеты на месте.</li>
     </ul>
+    <div class="note note-ok">Пустая заглушка не считается установкой. Снятие include, сниппета и страницы, повторный запуск, откат сломанного конфига и сохранение чужого сниппета с <code>default-reject</code> проверены на временных файлах. Живой nginx здесь не запускался. В пресет <code>unattended-web</code> скрипт не входит.</div>
         </div>
       </details>
     </section>

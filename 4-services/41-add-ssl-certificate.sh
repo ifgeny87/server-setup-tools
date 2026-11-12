@@ -40,12 +40,11 @@ fi
 FILE=/etc/nginx/conf.d/${DOMAIN}.conf
 BLOCK_NAME="nginx-${DOMAIN}"
 BEGIN="# BEGIN sst ${BLOCK_NAME}"
+# Страницы ошибок подключает только 43-nginx-error-pages.sh, не этот шаблон.
 BODY=$(cat <<EOF
 server {
     listen 443 ssl;
     server_name ${DOMAIN};
-
-    include /etc/nginx/snippets/sst-errors.conf;
 
     ssl_session_cache         shared:SSL:10m;
     ssl_session_timeout       10m; # default 5m
@@ -125,10 +124,7 @@ if [ -f "$FILE" ]; then
 fi
 
 logr "Создается шаблонный конфиг nginx для нового домена: $DOMAIN"
-mkdir -p /etc/nginx/snippets /etc/nginx/conf.d
-if [ ! -e /etc/nginx/snippets/sst-errors.conf ]; then
-    : > /etc/nginx/snippets/sst-errors.conf
-fi
+mkdir -p /etc/nginx/conf.d
 
 BACKUP=""
 if [ -f "$FILE" ]; then
