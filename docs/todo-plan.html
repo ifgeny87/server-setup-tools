@@ -562,7 +562,7 @@ details.ticket > summary .status { margin-left: auto; }
       <p class="menu-phase">5. Оставшиеся задачи</p>
       <a href="#SRV-018"><i class="ball ball-done"></i><span class="menu-id">SRV-018</span><span class="menu-title">Проверить пошаговое выполнение скриптов</span></a>
       <a href="#SRV-019"><i class="ball ball-done"></i><span class="menu-id">SRV-019</span><span class="menu-title">Повторный запуск без поломки системы</span></a>
-      <a href="#SRV-020"><i class="ball ball-ready"></i><span class="menu-id">SRV-020</span><span class="menu-title">Батч-скрипт: выбор, вопросы, стоп на ошибке</span></a>
+      <a href="#SRV-020"><i class="ball ball-done"></i><span class="menu-id">SRV-020</span><span class="menu-title">Батч-скрипт: выбор, вопросы, стоп на ошибке</span></a>
       <a href="#SRV-021"><i class="ball ball-ready"></i><span class="menu-id">SRV-021</span><span class="menu-title">Пресеты для запуска без участия пользователя</span></a>
       <a href="#SRV-022"><i class="ball ball-ready"></i><span class="menu-id">SRV-022</span><span class="menu-title">Подробно описать в README работу каждого скрипта</span></a>
       <a href="#SRV-023"><i class="ball ball-ready"></i><span class="menu-id">SRV-023</span><span class="menu-title">Интерактивное управление форвардом iptables</span></a>
@@ -576,7 +576,7 @@ details.ticket > summary .status { margin-left: auto; }
       <main class="wrap">
         <section class="how" id="how-to-read">
           <h2>Как читать</h2>
-          <p>План идёт сверху вниз, номера совпадают с порядком работы. Описание тикета свёрнуто и открывается по заголовку. Зелёный шарик — выполнено. Жёлтый — задачу можно делать, отдельного статуса «в работе» нет. Красный — задачу блокируют другие. В меню текущий пункт жирный, уже пройденные светлее. Следующий шаг — <a href="#SRV-020">SRV-020</a>. <a href="#SRV-023">SRV-023</a> можно делать параллельно после <a href="#SRV-008">SRV-008</a>. <a href="#SRV-025">SRV-025</a> и <a href="#SRV-026">SRV-026</a> можно делать сейчас: они опираются на уже сделанный <a href="#SRV-024">SRV-024</a>.</p>
+          <p>План идёт сверху вниз, номера совпадают с порядком работы. Описание тикета свёрнуто и открывается по заголовку. Зелёный шарик — выполнено. Жёлтый — задачу можно делать, отдельного статуса «в работе» нет. Красный — задачу блокируют другие. В меню текущий пункт жирный, уже пройденные светлее. Следующий шаг — <a href="#SRV-021">SRV-021</a>. <a href="#SRV-023">SRV-023</a> можно делать параллельно после <a href="#SRV-008">SRV-008</a>. <a href="#SRV-025">SRV-025</a> и <a href="#SRV-026">SRV-026</a> можно делать сейчас: они опираются на уже сделанный <a href="#SRV-024">SRV-024</a>.</p>
           <p class="how-counts">
             <span><i class="ball ball-done"></i>Выполнено <b data-count="done">0</b></span>
             <span><i class="ball ball-ready"></i>Можно делать <b data-count="ready">0</b></span>
@@ -1466,12 +1466,12 @@ details.ticket > summary .status { margin-left: auto; }
     </ul>
         </div>
       </details>
-      <details class="ticket" id="SRV-020" data-status="ready">
+      <details class="ticket" id="SRV-020" data-status="done">
         <summary>
-          <i class="ball ball-ready"></i>
+          <i class="ball ball-done"></i>
           <span class="id">SRV-020</span>
           <span class="ticket-title">Батч-скрипт: выбор, вопросы, стоп на ошибке</span>
-          <span class="status">Можно делать</span>
+          <span class="status">Выполнено</span>
         </summary>
         <div class="ticket-body">
 <p class="meta">
@@ -1479,6 +1479,7 @@ details.ticket > summary .status { margin-left: auto; }
       <span>логи: <a href="#SRV-002">SRV-002</a></span>
       <span>формат пресетов: <a href="#SRV-021">SRV-021</a></span>
     </p>
+    <div class="note note-ok">Меню, вопросы и остановка очереди проверены локально. Полный <code>sudo ./batch/run.sh</code> на Ubuntu не запускался. Пресет <code>default</code> уже в репозитории. Пресеты без вопросов — <a href="#SRV-021">SRV-021</a>.</div>
 
     <h2>Зачем</h2>
     <p>Сейчас пользователь сам помнит порядок из 15 файлов. Нужна одна команда: она показывает набор, забирает все ответы до старта и гоняет скрипты по очереди. Первая ошибка останавливает очередь и остаётся на экране.</p>
@@ -1567,6 +1568,7 @@ Enter — выполнить отмеченные, номер — переклю
 
     <h2>Зачем</h2>
     <p>Авторазвёртывание не может отвечать на вопросы. Пресет — это инструкция батчу: какие скрипты, в каком порядке, какие переменные обязательны, можно ли спрашивать человека.</p>
+    <div class="note"><code>batch/presets/default.conf</code> уже добавлен в SRV-020. Маска <code>batch/presets/*.local</code> уже в <code>.gitignore</code>. Осталось добавить <code>unattended-server</code> и <code>unattended-web</code>.</div>
 
     <h2>Формат</h2>
     <p>Один пресет — один файл <code>batch/presets/&lt;id&gt;.conf</code>. Парсер на bash, без yq и python. Поля:</p>
