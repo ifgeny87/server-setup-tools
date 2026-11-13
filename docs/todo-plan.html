@@ -577,8 +577,8 @@ details.ticket > summary .status { margin-left: auto; }
       <p class="menu-phase">7. Проверки и версии</p>
       <a href="#SRV-031"><i class="ball ball-done"></i><span class="menu-id">SRV-031</span><span class="menu-title">Регрессия без root и без Docker</span></a>
       <a href="#SRV-032"><i class="ball ball-done"></i><span class="menu-id">SRV-032</span><span class="menu-title">Прогон в контейнерах Ubuntu и Debian</span></a>
-      <a href="#SRV-033"><i class="ball ball-ready"></i><span class="menu-id">SRV-033</span><span class="menu-title">Node LTS и загрузчики с фиксированной ревизией</span></a>
-      <a href="#SRV-034"><i class="ball ball-ready"></i><span class="menu-id">SRV-034</span><span class="menu-title">Проверка бана и лимита лога на ВМ</span></a>
+      <a href="#SRV-033"><i class="ball ball-done"></i><span class="menu-id">SRV-033</span><span class="menu-title">Node LTS и загрузчики с фиксированной ревизией</span></a>
+      <a href="#SRV-034"><i class="ball ball-done"></i><span class="menu-id">SRV-034</span><span class="menu-title">Проверка бана и лимита лога на ВМ</span></a>
       <p class="menu-phase">8. Аудит сервера</p>
       <a href="#SRV-035"><i class="ball ball-done"></i><span class="menu-id">SRV-035</span><span class="menu-title">Скрипт проверки безопасности сервера</span></a>
       </div>
@@ -588,7 +588,7 @@ details.ticket > summary .status { margin-left: auto; }
       <main class="wrap">
         <section class="how" id="how-to-read">
           <h2>Как читать</h2>
-          <p>План идёт сверху вниз, номера совпадают с порядком работы. Описание тикета свёрнуто и открывается по заголовку. Зелёный шарик — выполнено. Жёлтый — задачу можно делать, отдельного статуса «в работе» нет. Красный — задачу блокируют другие. В меню текущий пункт жирный, уже пройденные светлее. Следующий шаг — <a href="#SRV-033">SRV-033</a>. Проверка бана — <a href="#SRV-034">SRV-034</a>, ей нужна ВМ.</p>
+          <p>План идёт сверху вниз, номера совпадают с порядком работы. Описание тикета свёрнуто и открывается по заголовку. Зелёный шарик — выполнено. Жёлтый — задачу можно делать, отдельного статуса «в работе» нет. Красный — задачу блокируют другие. В меню текущий пункт жирный, уже пройденные светлее. Тикеты <a href="#SRV-001">SRV-001</a> … <a href="#SRV-035">SRV-035</a> выполнены.</p>
           <p class="how-counts">
             <span><i class="ball ball-done"></i>Выполнено <b data-count="done">0</b></span>
             <span><i class="ball ball-ready"></i>Можно делать <b data-count="ready">0</b></span>
@@ -2177,12 +2177,12 @@ iptables -A FORWARD -p tcp -d "$SERVER_IP" --dport "$SERVER_SSH_PORT" \
     <div class="note note-ok"><code>bash tests/containers.sh</code> закончился кодом 0: <code>ubuntu:22.04</code>, <code>ubuntu:24.04</code>, <code>debian:12</code>, <code>debian:13</code>, в каждом <code>tests: 9 ok</code>. Прогон без <code>--privileged</code> и без systemd. Скрипт 22 и скрипты 13–15 в этот контур не входят. Настоящий iptables не вызывался.</div>
         </div>
       </details>
-      <details class="ticket" id="SRV-033" data-status="ready">
+      <details class="ticket" id="SRV-033" data-status="done">
         <summary>
-          <i class="ball ball-ready"></i>
+          <i class="ball ball-done"></i>
           <span class="id">SRV-033</span>
           <span class="ticket-title">Node LTS и загрузчики с фиксированной ревизией</span>
-          <span class="status">Можно делать</span>
+          <span class="status">Выполнено</span>
         </summary>
         <div class="ticket-body">
 <p class="meta">
@@ -2204,14 +2204,15 @@ iptables -A FORWARD -p tcp -d "$SERVER_IP" --dport "$SERVER_SSH_PORT" \
       <li>В скрипте 20 нет <code>master</code> и нет <code>curl | sh</code>.</li>
       <li>Таймер монитора не стартует, если файл секретов доступен группе или остальным.</li>
     </ul>
+    <div class="note note-ok">Без <code>VERSION</code> скрипт 21 запрашивает <code>setup_26.x</code>. <code>VERSION=25</code> — <code>[ERROR]</code> до сети, 22 по-прежнему доходит до URL. oh-my-zsh ставится с коммита <code>6010fb6260f359e71d99ba25f05f9215809b3ed2</code>: у upstream нет релизных тегов. Ключ Docker сверяется с отпечатком <code>9DC858229FC7DD38854AE2D88D81803C0EBFCD88</code> до записи источника. Скрипт 40 не включает таймер, если файл секретов читают группа или остальные. <code>bash tests/run.sh</code> — 13 ok.</div>
         </div>
       </details>
-      <details class="ticket" id="SRV-034" data-status="ready">
+      <details class="ticket" id="SRV-034" data-status="done">
         <summary>
-          <i class="ball ball-ready"></i>
+          <i class="ball ball-done"></i>
           <span class="id">SRV-034</span>
           <span class="ticket-title">Проверка бана и лимита лога на ВМ</span>
-          <span class="status">Можно делать</span>
+          <span class="status">Выполнено</span>
         </summary>
         <div class="ticket-body">
 <p class="meta">
@@ -2233,6 +2234,7 @@ iptables -A FORWARD -p tcp -d "$SERVER_IP" --dport "$SERVER_SSH_PORT" \
       <li>Один прогон на ВМ записан: бан совпал с jail, поток лога совпал с лимитом.</li>
       <li>Без ВМ тикет не закрывать заметкой «проверено на заглушке».</li>
     </ul>
+    <div class="note note-ok">ВМ Ubuntu 24.04.5, 2026-11-13. 30 SYN на закрытый порт дали 5 строк <code>FIREWALL DROP</code> в journal. Четыре неудачных SSH с <code>192.168.5.2</code>: <code>fail2ban</code> забанил этот адрес (<code>maxretry</code> 3), вход с <code>10.66.0.2</code> прошёл. Команды и цифры — <code>tests/vm-firewall.md</code>. Скрипт 13 выключает <code>ssh.socket</code>: иначе IPv4 на <code>SSH_PORT</code> молчит.</div>
         </div>
       </details>
     </section>

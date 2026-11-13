@@ -419,8 +419,8 @@ collect_needs() {
         fi
         prompt="${need_prompt[$j]}"
         [ -n "$prompt" ] || prompt="$var"
-        if [ "$var" = "VERSION" ] && [[ "$prompt" != *"(25)"* ]]; then
-            prompt="$prompt (25)"
+        if [ "$var" = "VERSION" ] && [[ "$prompt" != *"(26)"* ]]; then
+            prompt="$prompt (26)"
         fi
         while true; do
             read -r -p "$prompt: " answer || {
@@ -428,7 +428,7 @@ collect_needs() {
                 return 1
             }
             if [ -z "$answer" ] && [ "$var" = "VERSION" ]; then
-                answer=25
+                answer=26
             fi
             if [ -n "$answer" ]; then
                 set_env_value "$var" "$answer"

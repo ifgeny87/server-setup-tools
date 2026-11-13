@@ -1,14 +1,30 @@
 #!/bin/bash
 set -euo pipefail
-. "$(dirname -- "$0")/../common/_misc.sh" # load misc
+. "$(dirname -- "${BASH_SOURCE[0]}")/../common/_misc.sh" # load misc
 
 # Запускать после 1-server-setup/15-secure-firewall.sh:
 # монитор читает строки с префиксом FIREWALL DROP.
 # Повтор переписывает unit только если текст изменился и тогда же перезапускает таймер.
 
+# 0, если файла нет или его не читают группа и остальные.
+env_file_private() {
+    local path=$1 mode
+    [ -f "$path" ] || return 0
+    if ! mode=$(stat -c %a "$path" 2>/dev/null); then
+        mode=$(stat -f %OLp "$path")
+    fi
+    [ $((8#$mode & 077)) -eq 0 ]
+}
+
+# Пишет монитор и включает таймер, если секреты не открыты группе и остальным.
+main() {
 checkRoot
 
-ENV_PATH="/root/.env"
+ENV_PATH="${ENV_PATH:-/root/.env}"
+if ! env_file_private "$ENV_PATH"; then
+    logerr "Файл $ENV_PATH доступен группе или остальным. Таймер не включён"
+    exit 1
+fi
 if [ -f "$ENV_PATH" ]; then
     set -a
     # shellcheck disable=SC1090
@@ -136,3 +152,8 @@ else
 fi
 
 logok "Telegram уведомления будут отправляться при попытках доступа на запрещённые порты"
+}
+
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+    main "$@"
+fi

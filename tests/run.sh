@@ -293,6 +293,131 @@ test_sst_same_bytes() {
     ok "повтор блока sst не переписывает файл"
 }
 
+# Без VERSION скрипт 21 просит репозиторий Node 26. 25 отклоняется до curl, 22 доходит до URL.
+test_node_lts() {
+    local dir log
+    dir="$ROOT/tests/.tmp-node"
+    rm -rf "$dir"
+    mkdir -p "$dir"
+    log="$dir/curl.log"
+    cat > "$dir/curl" << 'EOF'
+#!/bin/bash
+printf '%s\n' "curl $*" >> "${STUB_LOG:?}"
+exit 1
+EOF
+    chmod +x "$dir/curl"
+    capture env -u VERSION STUB_LOG="$log" PATH="$dir:$STUBS:/usr/bin:/bin" ROOT="$ROOT" bash -s << 'EOF'
+set -euo pipefail
+source "$ROOT/2-install-software/21-install-node.sh"
+checkRoot() { return 0; }
+main
+EOF
+    [ "$CAP_CODE" -ne 0 ] || fail "node: пустой VERSION не остановился" "$CAP_OUT"
+    grep -q 'setup_26.x' "$log" || fail "node: нет репозитория 26" "$(cat "$log")"
+    grep -q 'setup_25' "$log" && fail "node: запрошен 25" "$(cat "$log")"
+
+    : > "$log"
+    capture env VERSION=25 STUB_LOG="$log" PATH="$dir:$STUBS:/usr/bin:/bin" ROOT="$ROOT" bash -s << 'EOF'
+set -euo pipefail
+source "$ROOT/2-install-software/21-install-node.sh"
+checkRoot() { return 0; }
+main
+EOF
+    [ "$CAP_CODE" -ne 0 ] || fail "node: 25 принят" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -q 'Node 25 снят с поддержки' || fail "node: нет отказа 25" "$CAP_OUT"
+    [ ! -s "$log" ] || fail "node: 25 дошёл до curl" "$(cat "$log")"
+
+    : > "$log"
+    capture env VERSION=22 STUB_LOG="$log" PATH="$dir:$STUBS:/usr/bin:/bin" ROOT="$ROOT" bash -s << 'EOF'
+set -euo pipefail
+source "$ROOT/2-install-software/21-install-node.sh"
+checkRoot() { return 0; }
+main
+EOF
+    grep -q 'setup_22.x' "$log" || fail "node: 22 не запрошен" "$(cat "$log")"
+    rm -rf "$dir"
+    ok "node 26 по умолчанию, 25 не ставится"
+}
+
+# Скрипт 20 не ссылается на ветку по умолчанию и не запускает установщик конвейером.
+test_omz_revision() {
+    local file="$ROOT/2-install-software/20-install-oh-my-zsh.sh"
+    grep -q 'master' "$file" && fail "omz: в скрипте есть движущаяся ветка" "$(grep -n 'master' "$file")"
+    grep -q 'curl |' "$file" && fail "omz: установщик запускается конвейером"
+    grep -q 'OMZ_REV=6010fb6260f359e71d99ba25f05f9215809b3ed2' "$file" || fail "omz: нет ревизии"
+    grep -q 'sh "$installer"' "$file" || fail "omz: установщик не запускается файлом"
+    ok "oh-my-zsh с зафиксированной ревизии"
+}
+
+# Ключ Docker принимается только с отпечатком из документации, и сверка идёт до источника.
+test_docker_fingerprint() {
+    local dir src call_line list_line update_line
+    dir="$ROOT/tests/.tmp-gpg"
+    rm -rf "$dir"
+    mkdir -p "$dir"
+    cat > "$dir/gpg" << 'EOF'
+#!/bin/bash
+printf 'fpr:::::::::%s:\n' "${GPG_FPR:-}"
+EOF
+    chmod +x "$dir/gpg"
+    : > "$dir/key"
+    capture env GPG_FPR=9DC858229FC7DD38854AE2D88D81803C0EBFCD88 PATH="$dir:$PATH" ROOT="$ROOT" KEY="$dir/key" bash -s << 'EOF'
+set -euo pipefail
+source "$ROOT/2-install-software/22-install-docker-ubuntu.sh"
+docker_key_matches "$KEY"
+EOF
+    [ "$CAP_CODE" -eq 0 ] || fail "docker: верный отпечаток отвергнут" "$CAP_OUT"
+    capture env GPG_FPR=0000000000000000000000000000000000000000 PATH="$dir:$PATH" ROOT="$ROOT" KEY="$dir/key" bash -s << 'EOF'
+set -euo pipefail
+source "$ROOT/2-install-software/22-install-docker-debian.sh"
+docker_key_matches "$KEY"
+EOF
+    [ "$CAP_CODE" -ne 0 ] || fail "docker: чужой отпечаток принят" "$CAP_OUT"
+    for src in "$ROOT/2-install-software/22-install-docker-ubuntu.sh" "$ROOT/2-install-software/22-install-docker-debian.sh"; do
+        grep -q 'DOCKER_GPG_FPR=9DC858229FC7DD38854AE2D88D81803C0EBFCD88' "$src" || fail "docker: нет отпечатка" "$src"
+        call_line=$(grep -n 'if ! docker_key_matches' "$src" | head -1 | cut -d: -f1)
+        list_line=$(grep -n 'docker.list' "$src" | head -1 | cut -d: -f1)
+        update_line=$(grep -n 'apt-get update' "$src" | tail -1 | cut -d: -f1)
+        [ -n "$call_line" ] && [ "$call_line" -lt "$list_line" ] && [ "$list_line" -lt "$update_line" ] \
+            || fail "docker: сверка не раньше источника" "$src"
+    done
+    rm -rf "$dir"
+    ok "отпечаток ключа Docker"
+}
+
+# Режим шире 600 не включает таймер. 600 до таймера доходит и останавливается на заглушке apt.
+test_monitor_env_mode() {
+    local dir envf log
+    dir=$(mktemp -d)
+    envf="$dir/root.env"
+    log="$dir/calls.log"
+    printf '%s\n' 'TELEGRAM_API_TOKEN=123:ABC' 'TELEGRAM_CHAT_ID=456' > "$envf"
+    chmod 640 "$envf"
+    capture env ENV_PATH="$envf" STUB_LOG="$log" PATH="$STUBS:$PATH" ROOT="$ROOT" bash -s << 'EOF'
+set -euo pipefail
+source "$ROOT/4-services/40-firewall-monitor.sh"
+checkRoot() { return 0; }
+main
+EOF
+    [ "$CAP_CODE" -ne 0 ] || fail "monitor: открытый env принят" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -q 'доступен группе или остальным' || fail "monitor: нет отказа" "$CAP_OUT"
+    [ ! -s "$log" ] || fail "monitor: таймер или apt вызваны" "$(cat "$log")"
+
+    chmod 600 "$envf"
+    : > "$log"
+    capture env ENV_PATH="$envf" STUB_LOG="$log" PATH="$STUBS:$PATH" ROOT="$ROOT" bash -s << 'EOF'
+set -euo pipefail
+source "$ROOT/4-services/40-firewall-monitor.sh"
+checkRoot() { return 0; }
+main
+EOF
+    printf '%s\n' "$CAP_OUT" | grep -q 'доступен группе или остальным' && fail "monitor: 600 сочтен открытым" "$CAP_OUT"
+    grep -q '^systemctl ' "$log" && fail "monitor: systemctl на заглушке apt" "$(cat "$log")"
+    grep -q '^apt-get ' "$log" || fail "monitor: 600 не дошёл до установки" "$(cat "$log")"
+    rm -rf "$dir"
+    ok "таймер не стартует при открытом env"
+}
+
 test_list
 test_launch_env
 test_missing_var
@@ -302,5 +427,9 @@ test_foreign_error_page
 test_nginx_rollback
 test_empty_stub_not_install
 test_sst_same_bytes
+test_node_lts
+test_omz_revision
+test_docker_fingerprint
+test_monitor_env_mode
 
 printf 'tests: %s ok\n' "$PASS"

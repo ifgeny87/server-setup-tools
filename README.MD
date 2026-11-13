@@ -70,7 +70,7 @@ SSH_CONFIG_BACKUP="/etc/ssh/sshd_config.backup_$(date +%Y%m%d_%H%M%S)"
 - `CERTBOT_EMAIL` — скрипт 24, только если аккаунта certbot ещё нет.
 - `DOMAIN` — скрипт 41.
 - `FORCE_NGINX=1` — скрипт 41, заменить уже существующий конфиг домена.
-- `VERSION` — скрипт 21, мажор Node.js. Пустое значение значит 25.
+- `VERSION` — скрипт 21, мажор Node.js. Пустое значение значит 26. Линию 25 не ставить. 22 и 24 допустимы, пока у них есть поддержка.
 - `TELEGRAM_API_TOKEN`, `TELEGRAM_CHAT_ID` — скрипт 40, файл `/root/.env` или окружение.
 - `TARGET_USER` — батч, от чьего имени запускать скрипты 20 и 30.
 
@@ -209,11 +209,11 @@ sudo passwd user1
 - `AllowGroups` из `SSH_GROUP`
 - `Port` из `SSH_PORT`
 
-Такие же директивы вне блока и старый комментарий `# --- Restrict SSH Access ---` снимаются, чтобы при повторе не копиться.
+Такие же директивы вне блока и старый комментарий `# --- Restrict SSH Access ---` снимаются, чтобы при повторе не копиться. OpenSSH берёт первое значение, а образ Ubuntu кладёт `PasswordAuthentication no` в `sshd_config.d` раньше этого блока. Поэтому скрипт пишет `/etc/ssh/sshd_config.d/00-sst.conf` с `PasswordAuthentication yes`: этот файл идёт раньше cloud-image.
 
 Если текст файла изменился, сначала копия в `SSH_CONFIG_BACKUP`, затем `sshd -t`. Проверка не прошла — файл возвращается из копии, ssh не перезапускается. Проверка прошла — `systemctl restart ssh` (или `sshd`, если юнит называется так).
 
-В момент перезапуска текущая сессия на старом порту оборвётся. Новую сессию на `SSH_PORT` нужно открыть и проверить до скрипта 15: после файрвола старый порт уже закрыт.
+В Ubuntu 24.04 порт слушает `ssh.socket`. Одного `ListenStream` с номером порта мало: в сокете включён `BindIPv6Only=ipv6-only`, и IPv4 молчит. Скрипт выключает этот сокет и включает сервис: тогда `sshd` сам слушает `Port` на `0.0.0.0` и на `[::]`. Нет слушателя на IPv4 — скрипт завершается с ошибкой, до файрвола дело не доходит. В момент перезапуска текущая сессия на старом порту оборвётся. Новую сессию на `SSH_PORT` нужно открыть и проверить до скрипта 15: после файрвола старый порт уже закрыт.
 
 Повтор при совпавшем файле и уже слушающем порте ssh не трогает и бэкап не пишет. Если `sshd -T` показывает другой порт или порт ещё не слушается, будет предупреждение и перезапуск.
 
@@ -269,7 +269,7 @@ sudo reboot
 
 Ставит oh-my-zsh в домашний каталог того, кто запустил скрипт. Это не root-скрипт: `checkRoot` нет. Нужен `zsh` из скрипта 10. В батче шаг идёт от `TARGET_USER`.
 
-Если каталог `~/.oh-my-zsh` уже есть, скрипт сразу заканчивается `[OK]`. Иначе качает установщик с `RUNZSH=no` и `CHSH=no`: оболочку не меняет и установщик не оставляет открытым zsh. Смена оболочки на zsh — скрипт 30.
+Если каталог `~/.oh-my-zsh` уже есть, скрипт сразу заканчивается `[OK]`. Иначе скачивает установщик ревизии `6010fb6260f359e71d99ba25f05f9215809b3ed2` в файл и запускает этот файл. `RUNZSH=no` и `CHSH=no`: оболочку не меняет и установщик не оставляет открытым zsh. Смена оболочки на zsh — скрипт 30. Ревизия зафиксирована в скрипте, движущаяся ветка не используется.
 
 ```shell
 ./2-install-software/20-install-oh-my-zsh.sh
@@ -277,7 +277,7 @@ sudo reboot
 
 ### `2-install-software/21-install-node.sh`
 
-Ставит Node.js из NodeSource. Запуск от root. `VERSION` — мажор, по умолчанию 25, ведущая `v` снимается.
+Ставит Node.js из NodeSource. Запуск от root. `VERSION` — мажор, по умолчанию 26, ведущая `v` снимается. Линию 25 скрипт не ставит: она снята с поддержки. 22 и 24 по-прежнему можно передать в `VERSION`.
 
 Если `node -v` уже этой мажорной версии, скрипт выходит. Иначе сначала проверяет, что `https://deb.nodesource.com/setup_<версия>.x` открывается, и только потом запускает его и `apt-get install nodejs`. Недоступный URL не оставляет полуустановленный репозиторий.
 
@@ -293,7 +293,7 @@ sudo VERSION=22 ./2-install-software/21-install-node.sh
 - `debian` — выполняет `22-install-docker-debian.sh`.
 - другое значение — `[ERROR]`, ничего не ставит.
 
-Оба файла установки делают одно и то же на своём репозитории Docker: если `docker compose version` уже работает, выходят до apt. Иначе ставят ключ, источник пакетов и `docker-ce`, `docker-ce-cli`, `containerd.io`, `docker-buildx-plugin`, `docker-compose-plugin`. Отдельной команды `docker-compose` с дефисом скрипт не требует.
+Оба файла установки делают одно и то же на своём репозитории Docker: если `docker compose version` уже работает, выходят до apt. Иначе скачивают ключ и сверяют отпечаток `9DC8 5822 9FC7 DD38 854A E2D8 8D81 803C 0EBF CD88` с документацией Docker. Чужой отпечаток — `[ERROR]` до записи источника и до `apt-get update` из этого источника. Дальше ставят `docker-ce`, `docker-ce-cli`, `containerd.io`, `docker-buildx-plugin`, `docker-compose-plugin`. Отдельной команды `docker-compose` с дефисом скрипт не требует.
 
 ```shell
 sudo ./2-install-software/22-install-docker.sh
@@ -303,7 +303,7 @@ sudo ./2-install-software/22-install-docker.sh
 
 Установка Docker на Ubuntu. Запуск от root. Обычно его вызывает `22-install-docker.sh`, напрямую тоже можно.
 
-Если `docker compose version` уже выполняется, скрипт печатает версии и выходит до apt. Иначе ставит `ca-certificates` и `curl`, кладёт ключ Docker в `/etc/apt/keyrings/docker.asc`, добавляет источник `download.docker.com/linux/ubuntu` с кодовым именем из `/etc/os-release` и ставит `docker-ce`, `docker-ce-cli`, `containerd.io`, `docker-buildx-plugin`, `docker-compose-plugin`.
+Если `docker compose version` уже выполняется, скрипт печатает версии и выходит до apt. Иначе ставит `ca-certificates`, `curl` и `gnupg`, сверяет ключ Docker с отпечатком из документации и только потом кладёт его в `/etc/apt/keyrings/docker.asc`. Источник `download.docker.com/linux/ubuntu` с кодовым именем из `/etc/os-release` пишется после сверки. Пакеты: `docker-ce`, `docker-ce-cli`, `containerd.io`, `docker-buildx-plugin`, `docker-compose-plugin`.
 
 Повтор при уже рабочем `docker compose` пакеты не трогает.
 
@@ -365,7 +365,7 @@ sudo CERTBOT_EMAIL=admin@example.com ./2-install-software/24-install-nginx-certb
 
 Шлёт в Telegram строки `FIREWALL DROP:` из `/var/log/syslog`. Без скрипта 15 таких строк нет, и монитор молчит. Запуск от root, после 15.
 
-Токен и чат читает из окружения или из `/root/.env`: `TELEGRAM_API_TOKEN`, `TELEGRAM_CHAT_ID`. Любого нет — `[ERROR]`, таймер не включается.
+Токен и чат читает из окружения или из `/root/.env`: `TELEGRAM_API_TOKEN`, `TELEGRAM_CHAT_ID`. Любого нет — `[ERROR]`, таймер не включается. Если `/root/.env` есть и его читают группа или остальные (режим шире `600`), тоже `[ERROR]` и таймер не включается.
 
 Ставит `python3`, `python3-requests`, `python3-dotenv`, если их нет. Пишет `/usr/local/bin/firewall-monitor.py`, сервис и таймер systemd. Таймер: через 30 секунд после загрузки и дальше каждые 30 секунд. Позиция чтения лежит в `/tmp/firewall_lastpos`.
 

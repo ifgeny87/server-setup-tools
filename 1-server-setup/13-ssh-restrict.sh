@@ -66,13 +66,30 @@ awk -v b="$BEGIN" -v e="$END" '
 } > "$DESIRED"
 rm -f "$DESIRED.out"
 
+# OpenSSH оставляет первое значение. cloud-image в sshd_config.d отключает пароль раньше блока sst.
+write_password_first() {
+    local dir=/etc/ssh/sshd_config.d
+    [ -d "$dir" ] || return 0
+    cat > "$dir/00-sst.conf" << 'EOF'
+# Первое значение побеждает. Этот файл идёт раньше cloud-image.
+PasswordAuthentication yes
+EOF
+}
+
 current_port=$(sshd -T -f /etc/ssh/sshd_config 2>/dev/null | awk 'tolower($1)=="port" { print $2; exit }' || true)
 made_backup=0
 
 if cmp -s /etc/ssh/sshd_config "$DESIRED"; then
     logr "Конфиг SSH уже совпадает"
     rm -f "$DESIRED"
-    need_restart=0
+    had_dropin=0
+    [ -f /etc/ssh/sshd_config.d/00-sst.conf ] && had_dropin=1
+    write_password_first
+    if [ "$had_dropin" -eq 0 ] && [ -f /etc/ssh/sshd_config.d/00-sst.conf ]; then
+        need_restart=1
+    else
+        need_restart=0
+    fi
 else
     if ! cp /etc/ssh/sshd_config "$SSH_CONFIG_BACKUP"; then
         logerr "Не удалось создать бэкап файла: /etc/ssh/sshd_config"
@@ -86,18 +103,26 @@ else
     need_restart=1
 
     logr "Проверяем конфигурацию SSH..."
+    write_password_first
     if ! sshd -t; then
         logerr "Конфигурация SSH недействительна. Возвращаю $SSH_CONFIG_BACKUP"
         cp "$SSH_CONFIG_BACKUP" /etc/ssh/sshd_config
+        rm -f /etc/ssh/sshd_config.d/00-sst.conf
         exit 1
     fi
 fi
 
+# IPv4-адрес нужен отдельно: ListenStream=ПОРТ при BindIPv6Only=ipv6-only садится только на [::].
+ssh_port_listening() {
+    command -v ss >/dev/null 2>&1 || return 1
+    ss -lnt | awk '{ print $4 }' | grep -Eq "^(0\\.0\\.0\\.0|\\*):${SSH_PORT}$"
+}
+
 if [ -n "$current_port" ] && [ "$current_port" != "$SSH_PORT" ]; then
     logwarn "Порт SSH сменится с ${current_port} на ${SSH_PORT}. Текущая сессия оборвётся"
     need_restart=1
-elif command -v ss >/dev/null 2>&1 && ! ss -lnt | awk '{ print $4 }' | grep -Eq "(^|:)${SSH_PORT}$"; then
-    logr "sshd ещё не слушает порт ${SSH_PORT}"
+elif ! ssh_port_listening; then
+    logr "sshd ещё не слушает порт ${SSH_PORT} на IPv4"
     need_restart=1
 fi
 
@@ -119,9 +144,34 @@ else
     exit 1
 fi
 
+# Ubuntu 24.04 принимает соединения сокетом systemd. Номер порта в drop-in
+# при BindIPv6Only=ipv6-only не открывает IPv4, а генератор сокета может вернуть 22.
+# Порт из sshd_config слушает сам сервис, на 0.0.0.0 и на [::].
+socket_unit=""
+if systemctl cat ssh.socket >/dev/null 2>&1; then
+    socket_unit=ssh.socket
+elif systemctl cat sshd.socket >/dev/null 2>&1; then
+    socket_unit=sshd.socket
+fi
+
+# Остановка сокета рвёт текущий SSH. Скрипт должен дожить до проверки порта.
+trap '' HUP
+
+if [ -n "$socket_unit" ]; then
+    rm -f "/etc/systemd/system/${socket_unit}.d/port.conf"
+    systemctl disable --now "$socket_unit" || true
+    logr "Сокет $socket_unit выключен, порт ${SSH_PORT} слушает $SSH_UNIT"
+fi
+
+systemctl enable "$SSH_UNIT" >/dev/null 2>&1 || true
 logr "Перезапускаем SSH-сервер ($SSH_UNIT)..."
 if ! systemctl restart "$SSH_UNIT"; then
     logerr "Не удалось перезапустить SSH-сервер. Проверьте: journalctl -u $SSH_UNIT"
+    exit 1
+fi
+
+if ! ssh_port_listening; then
+    logerr "Порт ${SSH_PORT} не слушается. Проверьте: ss -lnt и journalctl -u $SSH_UNIT"
     exit 1
 fi
 
