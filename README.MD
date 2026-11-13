@@ -43,11 +43,11 @@ docker run -it --rm -v "$PWD":/opt/server-setup-tools ubuntu /bin/bash
 4. После скрипта 13 текущая сессия на старом порту оборвётся. С другой машины открыть новую сессию на `SSH_PORT` этим пользователем и убедиться, что она жива.
 5. Только потом запускать скрипт 15. После него старый порт файрволом уже закрыт. Если новая сессия не открылась, без консоли на сервер не зайти.
 
-Батч `unattended-server` и `unattended-web` сам проходит 13, затем 14 и 15. Перед шагом 13 он печатает предупреждение и не ждёт. Для машины только с SSH этого мало: порт в `.env` и второй канал нужны до старта батча.
+Батч `clean-server` и `unattended-web` сам проходит 13, затем 14 и 15. Перед шагом 13 он печатает предупреждение и не ждёт. Для машины только с SSH этого мало: порт в `.env` и второй канал нужны до старта батча.
 
 ## Переменные `.env`
 
-Файл лежит в корне репозитория. Его читает `loadEnv` из `common/_misc.sh`: путь считается от каталога скрипта на уровень вверх, то есть для скриптов из `1-server-setup` это корневой `.env`. Батч читает тот же файл напрямую.
+Файл лежит в корне репозитория. Его читает `loadEnv` из `common/_misc.sh`: путь считается от каталога скрипта на уровень вверх, то есть для скриптов из `1-server-setup` это корневой `.env`. Батч читает тот же файл, затем `.env` из каталога запуска, если это другой файл. Значения каталога запуска перекрывают одноимённые из корня.
 
 | Переменная | Зачем |
 | --- | --- |
@@ -64,7 +64,7 @@ SSH_CONFIG_BACKUP="/etc/ssh/sshd_config.backup_$(date +%Y%m%d_%H%M%S)"
 
 Команда `date` выполняется при каждом `source` этого файла, не один раз при создании. Повторный запуск скрипта 13, если конфиг снова изменился, пишет новый бэкап с новым временем.
 
-Остальные переменные в `.env` не лежат. Их задают в окружении или отвечает терминал:
+Остальные переменные в корневой `.env` не лежат. Их задают в окружении, в `.env` каталога запуска или отвечает терминал:
 
 - `NEW_USER_LOGIN`, `NEW_USER_SSH_KEY` — скрипт 12.
 - `CERTBOT_EMAIL` — скрипт 24, только если аккаунта certbot ещё нет.
@@ -93,21 +93,23 @@ SSH_CONFIG_BACKUP="/etc/ssh/sshd_config.backup_$(date +%Y%m%d_%H%M%S)"
 ```shell
 sudo ./batch/run.sh --list
 sudo ./batch/run.sh
-sudo ./batch/run.sh --preset unattended-server --yes
+sudo ./batch/run.sh --preset clean-server --yes
 ```
 
-`--list` не требует root и печатает пресеты: `default`, `unattended-server`, `unattended-web`.
+`--list` не требует root и печатает пресеты: `default`, `clean-server`, `unattended-web`.
 
-Без флага `--preset` берётся `default`: шаги 10–15, вопросы логина и ключа. Пустая строка в меню запускает отмеченные пункты. Номер переключает пункт. `preset <id>` меняет набор. `q` выходит, ничего не ставя.
+Без флага `--preset` берётся `default`. Поле `INTERACTIVE` решает, спрашивать ли человека. `NEED` всегда сначала читается из окружения. Если значения нет и `INTERACTIVE=no`, батч печатает `[ERROR]` и выходит. Если значения нет и `INTERACTIVE=prompt`, батч спрашивает его после меню.
 
-`--yes` пропускает это меню. Без терминала нужны оба флага, `--preset` и `--yes`, иначе `[ERROR]` до любого скрипта.
+Меню есть только при `INTERACTIVE=prompt`, в терминале и без `--yes`. Сначала в нём шаги пресета. Стрелки двигают строку, Enter переключает шаг. Пункт «Добавить команду» принимает путь ещё одного скрипта от корня репозитория. «Выполнить» запускает отмеченные, «Выход» и `q` ничего не ставят. Экран не очищается, прошлый вывод остаётся выше меню.
 
-Пресет `unattended-server` (`INTERACTIVE=no`) — те же шаги 10–15 без вопросов. Логин и ключ должны уже быть в окружении, иначе батч печатает `[ERROR] Нет переменной …` и выходит до проверки root и до скрипта 10:
+`--yes` отключает меню и вопросы. Без терминала нужны оба флага, `--preset` и `--yes`, иначе `[ERROR]` до любого скрипта.
+
+Пресет `clean-server` (`INTERACTIVE=no`) — те же шаги 10–15 без вопросов. Логин и ключ должны уже быть в окружении, иначе батч печатает `[ERROR] Нет переменной …` и выходит до проверки root и до скрипта 10:
 
 ```shell
 sudo NEW_USER_LOGIN=user1 \
   NEW_USER_SSH_KEY='ssh-ed25519 AAAA... user@computer' \
-  ./batch/run.sh --preset unattended-server --yes
+  ./batch/run.sh --preset clean-server --yes
 ```
 
 Пресет `unattended-web` добавляет Docker, автоочистку образов, nginx с certbot, сертификат домена и страницы ошибок. Дополнительно нужны `CERTBOT_EMAIL` и `DOMAIN`. Скриптов 20, 21, 30, 40, 42 и 44 в этом пресете нет.
@@ -115,6 +117,30 @@ sudo NEW_USER_LOGIN=user1 \
 Ненулевой код дочернего скрипта останавливает очередь: `[ERROR] Остановлено на <путь>, код N`, следующие шаги не запускаются. Перед `13-ssh-restrict.sh` батч печатает `[WARN]`: сейчас сменится порт SSH из `.env`, текущая сессия оборвётся. Это не вопрос.
 
 В терминале заголовок пресета и строка `# имя-скрипта` белые, отмеченный пункт зелёный, снятый серый. Успешный шаг и финальное `Готово, шагов: N` зелёные, остановка красная целиком. `NO_COLOR` и вывод в файл оставляют текст без ANSI.
+
+Регрессия без root, без Docker и без сети: `bash tests/run.sh`. `apt`, `sshd` и `iptables` в этом прогоне — заглушки из `tests/stubs`. Пресет без вопросов в каталоге называется `clean-server`.
+
+Тот же набор в образах: `bash tests/containers.sh`. Образы `ubuntu:22.04`, `ubuntu:24.04`, `debian:12`, `debian:13`. Репозиторий монтируется внутрь, в каждом выполняется `bash tests/run.sh`. Прогон без `--privileged` и без systemd. Установка Docker скриптом 22 в этот контур не входит: это Docker внутри Docker, на Mac вложенный dockerd не считается проверкой. Скрипты 13–15 со sshd остаются на ВМ. Настоящий iptables здесь не вызывается. Живой iptables в контейнере — только заглушка из `tests/stubs` и только с `--cap-add NET_ADMIN`, не полный скрипт 15: тот зовёт `systemctl`.
+
+## Проверка установки
+
+Это прогон пресета `clean-server`: шаги 10–15, пользователь `dev`, ключ генерируется на месте. В контейнере нет sshd и systemd, поэтому очередь обычно останавливается на скрипте 13, и это не замена ВМ. Консоль после батча остаётся. Если имя `sst` уже занято: `docker rm -f sst`.
+
+```shell
+docker run -it --name sst ubuntu:24.04 bash -c 'export DEBIAN_FRONTEND=noninteractive; apt-get update -y && apt-get install -y git openssh-client && ssh-keygen -t ed25519 -f /root/sst-key -N "" -q && git clone https://github.com/ifgeny87/server-setup-tools /opt/server-setup-tools && cd /opt/server-setup-tools && NEW_USER_LOGIN=dev NEW_USER_SSH_KEY="$(cat /root/sst-key.pub)" ./batch/run.sh --preset clean-server --yes; echo "batch exit: $?"; cd /opt/server-setup-tools 2>/dev/null || true; exec bash'
+```
+
+На свежем VDS ту же установку вставляют одной строкой от root. Скрипт 13 сменит порт SSH на `9999` и закроет вход по паролю без ключа. Нужна консоль провайдера или уже проверенный вход. Пароль пользователю `dev` задают отдельно: `passwd dev`.
+
+```shell
+export DEBIAN_FRONTEND=noninteractive; apt-get update -y && apt-get install -y git openssh-client && ssh-keygen -t ed25519 -f /root/sst-key -N "" -q && git clone https://github.com/ifgeny87/server-setup-tools /opt/server-setup-tools && cd /opt/server-setup-tools && NEW_USER_LOGIN=dev NEW_USER_SSH_KEY="$(cat /root/sst-key.pub)" ./batch/run.sh --preset clean-server --yes
+```
+
+Тот же прогон, но логин и ключ лежат в `.env` каталога запуска, а не в переменных команды. Этот файл не затирает `.env` репозитория: батч читает корень репозитория, затем `/root/.env`.
+
+```shell
+export DEBIAN_FRONTEND=noninteractive; apt-get update -y && apt-get install -y git openssh-client && ssh-keygen -t ed25519 -f /root/sst-key -N "" -q && git clone https://github.com/ifgeny87/server-setup-tools /opt/server-setup-tools && printf '%s\n' "NEW_USER_LOGIN=dev" "NEW_USER_SSH_KEY=$(cat /root/sst-key.pub)" > /root/.env && cd /root && /opt/server-setup-tools/batch/run.sh --preset clean-server --yes
+```
 
 ## 1. Подготовка сервера
 
@@ -374,7 +400,7 @@ sudo DOMAIN=example.com ./4-services/41-add-ssl-certificate.sh
 - `/etc/iptables/forward-rules.conf` — какие пробросы скрипт помнит;
 - `/etc/iptables/rules.v4` — снимок всего iptables, его же пишет скрипт 15.
 
-Меню из шести пунктов. Цифра 1–5 запускает пункт сразу. Стрелки и Enter выбирают подсвеченную строку. `0` и `q` выходят.
+Меню из шести пунктов. Цифра 1–5 запускает пункт сразу. Стрелки и Enter выбирают подсвеченную строку. `0` и `q` выходят. Экран не очищается: стрелки перерисовывают только блок меню, а вывод команды остаётся выше.
 
 1. Список: конфиг, живой iptables и снимок. Колонка «после ребута» показывает, переживёт ли набор перезагрузку. Одного живого `ip_forward=1` мало: единица должна быть в sysctl-файле.
 2. Добавить. Спрашивает локальные порты tcp/udp, локальный IP, порты и IP сервера. Та же шестёрка второй раз — `[ERROR]`, правила не дублируются. Форвард включается только вместе с DROP на FORWARD. Пока политика не DROP, sysctl-файл не пишется и правило не добавляется: сначала нужен скрипт 15. Если пересылка выключена, а политика уже DROP, пишется `/etc/sysctl.d/99-sst-ip-forward.conf` и применяется `sysctl --system`. Если в FORWARD ещё нет `RELATED,ESTABLISHED`, правило вставляется первым: иначе DROP режет ответ сервера. Повтор его не дублирует. В снимок `rules.v4` добавление не пишет.

@@ -331,8 +331,10 @@ ensure_forward_established() {
 
 # Пишет sysctl только когда FORWARD уже DROP. Иначе хост маршрутизирует чужой трафик.
 enable_forward_if_needed() {
-    local current
-    if ! iptables -S 2>/dev/null | grep -qx -- '-P FORWARD DROP'; then
+    local current dump
+    # Не через пайп: при pipefail grep -q закрывает iptables сигналом, и найденная строка считается отсутствующей.
+    dump=$(iptables -S 2>/dev/null || true)
+    if ! grep -qx -- '-P FORWARD DROP' <<< "$dump"; then
         logerr "Политика FORWARD не DROP. Сначала выполните 1-server-setup/15-secure-firewall.sh"
         return 1
     fi
@@ -585,9 +587,17 @@ do_load() {
     logok "Загружен снимок iptables: $RULES"
 }
 
+# Меню не стирает экран: прошлые логи остаются выше. Стрелки перерисовывают только этот блок.
+menu_hold=0
+menu_lines=0
+
 draw_menu() {
     local i
-    tput clear 2>/dev/null || true
+    if [ "$menu_hold" -eq 1 ] && [ "$menu_lines" -gt 0 ]; then
+        if tput cuu "$menu_lines" >/dev/null 2>&1; then
+            tput ed >/dev/null 2>&1 || true
+        fi
+    fi
     echo "Конфиг форварда: $CONF"
     echo "Постоянные правила iptables: $RULES"
     echo
@@ -598,6 +608,8 @@ draw_menu() {
         printf '  %s\n' "${MENU_ITEMS[$i]}"
         tput sgr0 2>/dev/null || true
     done
+    menu_lines=9
+    menu_hold=1
 }
 
 read_key() {
@@ -615,6 +627,7 @@ read_key() {
 }
 
 run_menu_index() {
+    menu_hold=0
     case "$1" in
         0) do_list ;;
         1) do_add ;;
