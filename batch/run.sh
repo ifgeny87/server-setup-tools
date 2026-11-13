@@ -190,19 +190,23 @@ print_list() {
 }
 
 show_steps() {
-    local i mark n
-    echo "Пресет: $preset_id"
+    local i mark n title
+    title="Пресет: $preset_id"
+    if [ -n "$preset_title" ]; then
+        title="$title — $preset_title"
+    fi
+    printf '%b%s%b\n' "$COL_FG_WHITE" "$title" "$COL_RES"
     n=1
     for i in "${!step_path[@]}"; do
         if [ "${step_enabled[$i]}" = 1 ]; then
-            mark="[x]"
+            mark=$(printf '%b%s%b' "$COL_LIME" "[x]" "$COL_RES")
         else
-            mark="[ ]"
+            mark=$(printf '%b%s%b' "$COL_FG_GRAY" "[ ]" "$COL_RES")
         fi
         printf '  %s %s  %s\n' "$mark" "$n" "${step_path[$i]}"
         n=$((n + 1))
     done
-    echo "Enter — выполнить отмеченные, номер — переключить, preset <id> — сменить пресет, q — выход"
+    printf '%b%s%b\n' "$COL_FG_GRAY" "Enter — выполнить отмеченные, номер — переключить, preset <id> — сменить пресет, q — выход" "$COL_RES"
 }
 
 # Пустая строка подтверждает набор. Возвращает 2, если пользователь вышел через q.
@@ -309,19 +313,21 @@ enabled_count() {
 }
 
 run_steps() {
-    local i path script code started=0
+    local i path script code name started=0 finished=0
     for i in "${!step_path[@]}"; do
         [ "${step_enabled[$i]}" = 1 ] || continue
         path="${step_path[$i]}"
         script="$ROOT/$path"
+        name=$(basename -- "$path")
         if [ "$started" -eq 1 ]; then
             echo
         fi
         started=1
-        if [ "$(basename -- "$path")" = "13-ssh-restrict.sh" ]; then
+        finished=$((finished + 1))
+        if [ "$name" = "13-ssh-restrict.sh" ]; then
             logwarn "Сейчас сменится порт SSH на ${SSH_PORT:-порт из .env}. Текущая сессия оборвётся"
         fi
-        log "# $(basename -- "$path")"
+        log "${COL_FG_WHITE}# ${name}${COL_RES}"
         set +e
         if [ "${step_user[$i]}" = 1 ]; then
             sudo -u "$TARGET_USER" -H bash "$script"
@@ -331,11 +337,12 @@ run_steps() {
         code=$?
         set -e
         if [ "$code" -ne 0 ]; then
-            logerr "Остановлено на ${path}, код ${code}"
+            log "${COL_RED}[ERROR] Остановлено на ${path}, код ${code}${COL_RES}"
             exit "$code"
         fi
-        logok "$(basename -- "$path")"
+        log "${COL_LIME}[OK] ${name}${COL_RES}"
     done
+    log "${COL_LIME}[OK] Готово, шагов: ${finished}${COL_RES}"
 }
 
 main() {

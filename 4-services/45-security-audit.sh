@@ -137,6 +137,17 @@ rank_of() {
     esac
 }
 
+# Цвет кода в отчёте. В файл и при NO_COLOR переменные цвета пустые.
+audit_color() {
+    case "$1" in
+        crit) printf '%s' "$COL_RED" ;;
+        warn) printf '%s' "$COL_FG_YELLOW" ;;
+        ok) printf '%s' "$COL_LIME" ;;
+        info) printf '%s' "$COL_FG_BLUE" ;;
+        *) printf '%s' "$COL_FG_GRAY" ;;
+    esac
+}
+
 prepare_tmp() {
     if [ -z "$AUDIT_TMP" ]; then
         AUDIT_TMP=$(mktemp -d)
@@ -1169,8 +1180,9 @@ run_checks() {
 print_report() {
     local title level code fix text fact action ncrit=0 nwarn=0 nok=0 path
     print_bucket() {
-        local want=$1
-        printf '== %s ==\n' "$2"
+        local want=$1 color
+        color=$(audit_color "$want")
+        printf '%b== %s ==%b\n' "$color" "$2" "$COL_RES"
         while IFS='|' read -r code fix text; do
             path="$AUDIT_TMP/r/$code"
             [ -f "$path" ] || continue
@@ -1178,7 +1190,7 @@ print_report() {
             [ "$level" = "$want" ] || continue
             fact=$(awk 'NR == 2 { print; exit }' "$path")
             action=$(awk 'NR == 3 { print; exit }' "$path")
-            printf '%s  %s\n' "$code" "$fact"
+            printf '%b%s%b  %s\n' "$color" "$code" "$COL_RES" "$fact"
             if [ "$want" != ok ] && [ "$want" != info ] && [ -n "$action" ]; then
                 printf '  Сделать: %s\n' "$action"
             fi
@@ -1189,11 +1201,22 @@ print_report() {
             esac
         done < <(catalog)
     }
+    # Нулевой счётчик серый, ненулевой — цветом своего уровня.
+    total_part() {
+        local color=$1 name=$2 n=$3
+        if [ "$n" -eq 0 ]; then
+            color=$COL_FG_GRAY
+        fi
+        printf '%b%s=%s%b' "$color" "$name" "$n" "$COL_RES"
+    }
     print_bucket info "Собрано"
     print_bucket ok "Сильные стороны"
     print_bucket warn "Предупреждения"
     print_bucket crit "Критичное"
-    printf 'Итог: critical=%s warning=%s ok=%s\n' "$ncrit" "$nwarn" "$nok"
+    printf 'Итог: %s %s %s\n' \
+        "$(total_part "$COL_RED" critical "$ncrit")" \
+        "$(total_part "$COL_FG_YELLOW" warning "$nwarn")" \
+        "$(total_part "$COL_LIME" ok "$nok")"
     AUDIT_NCRIT=$ncrit
 }
 
@@ -1337,6 +1360,7 @@ apply_fix() {
 }
 
 print_help() {
+    local code fix text kind mark
     cat <<EOF
 Использование:
   4-services/45-security-audit.sh
@@ -1351,13 +1375,19 @@ print_help() {
 
 Код  вид  --fix  о чём
 EOF
-    catalog | awk -F'|' '
-        {
-            kind = ($1 ~ /^AUD-I-/) ? "сбор" : "проверка"
-            fix = ($2 == "yes") ? "меняет" : "не меняет"
-            printf "%s  %s  %s  %s\n", $1, kind, fix, $3
-        }
-    '
+    while IFS='|' read -r code fix text; do
+        if [[ "$code" == AUD-I-* ]]; then
+            kind="сбор"
+        else
+            kind="проверка"
+        fi
+        if [ "$fix" = yes ]; then
+            mark="меняет"
+        else
+            mark="не меняет"
+        fi
+        printf '%b%s%b  %s  %s  %s\n' "$COL_FG_BLUE" "$code" "$COL_RES" "$kind" "$mark" "$text"
+    done < <(catalog)
 }
 
 main() {
