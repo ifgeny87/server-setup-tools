@@ -1,0 +1,3 @@
+#!/bin/bash
+printf '%s\n' "systemctl $*" >> "${STUB_LOG:?}"
+exit 1

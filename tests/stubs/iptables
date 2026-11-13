@@ -1,0 +1,121 @@
+#!/bin/bash
+# Память правил в $IPT_STATE. Боевой iptables не вызывается.
+state=${IPT_STATE:?}
+mkdir -p "$state"
+touch "$state/calls"
+printf '%s\n' "iptables $*" >> "$state/calls"
+
+table=filter
+if [ "${1:-}" = "-t" ]; then
+    table=$2
+    shift 2
+fi
+cmd=${1:-}
+shift || true
+rules="$state/$table.rules"
+touch "$rules"
+
+policy_of() {
+    local chain=$1 pol=""
+    if [ -f "$state/$table.policy" ]; then
+        pol=$(awk -v c="$chain" '$1 == c { print $2; exit }' "$state/$table.policy")
+    fi
+    if [ -n "$pol" ]; then
+        printf '%s' "$pol"
+        return 0
+    fi
+    if [ "$table" = filter ] && [ "$chain" = FORWARD ]; then
+        printf '%s' DROP
+    else
+        printf '%s' ACCEPT
+    fi
+}
+
+chains_of() {
+    if [ "$table" = nat ]; then
+        printf '%s\n' PREROUTING INPUT OUTPUT POSTROUTING
+    else
+        printf '%s\n' INPUT FORWARD OUTPUT
+    fi
+}
+
+dump_chain() {
+    local chain=$1
+    printf -- '-P %s %s\n' "$chain" "$(policy_of "$chain")"
+    awk -v c="$chain" '$1 == "-A" && $2 == c { print }' "$rules"
+}
+
+insert_rule() {
+    local chain=$1 num=$2 line=$3
+    local tmp seen=0 row
+    tmp=$(mktemp)
+    while IFS= read -r row || [ -n "$row" ]; do
+        if [[ "$row" == -A\ "$chain"\ * ]]; then
+            seen=$((seen + 1))
+            if [ "$seen" -eq "$num" ]; then
+                printf '%s\n' "$line" >> "$tmp"
+            fi
+        fi
+        printf '%s\n' "$row" >> "$tmp"
+    done < "$rules"
+    if [ "$seen" -lt "$num" ]; then
+        printf '%s\n' "$line" >> "$tmp"
+    fi
+    cat "$tmp" > "$rules"
+    rm -f "$tmp"
+}
+
+delete_rule() {
+    local chain=$1 num=$2
+    local tmp seen=0 row
+    tmp=$(mktemp)
+    while IFS= read -r row || [ -n "$row" ]; do
+        if [[ "$row" == -A\ "$chain"\ * ]]; then
+            seen=$((seen + 1))
+            if [ "$seen" -eq "$num" ]; then
+                continue
+            fi
+        fi
+        printf '%s\n' "$row" >> "$tmp"
+    done < "$rules"
+    cat "$tmp" > "$rules"
+    rm -f "$tmp"
+}
+
+case "$cmd" in
+    -S)
+        if [ $# -eq 0 ]; then
+            while IFS= read -r chain; do
+                dump_chain "$chain"
+            done < <(chains_of)
+        else
+            dump_chain "$1"
+        fi
+        ;;
+    -C)
+        chain=$1
+        shift
+        if grep -Fxq -- "-A $chain $*" "$rules"; then
+            exit 0
+        fi
+        exit 1
+        ;;
+    -I)
+        chain=$1
+        num=$2
+        shift 2
+        insert_rule "$chain" "$num" "-A $chain $*"
+        ;;
+    -A)
+        chain=$1
+        shift
+        printf '%s\n' "-A $chain $*" >> "$rules"
+        ;;
+    -D)
+        delete_rule "$1" "$2"
+        ;;
+    *)
+        printf 'заглушка iptables не знает команду: %s\n' "$cmd" >&2
+        exit 1
+        ;;
+esac

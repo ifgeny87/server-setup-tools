@@ -1,0 +1,3 @@
+#!/bin/bash
+printf '%s\n' "apt $*" >> "${STUB_LOG:?}"
+exit 1

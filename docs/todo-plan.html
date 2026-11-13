@@ -575,8 +575,8 @@ details.ticket > summary .status { margin-left: auto; }
       <a href="#SRV-029"><i class="ball ball-done"></i><span class="menu-id">SRV-029</span><span class="menu-title">Убрать RC4 и ограничить имя домена</span></a>
       <a href="#SRV-030"><i class="ball ball-done"></i><span class="menu-id">SRV-030</span><span class="menu-title">Не маршрутизировать весь трафик при форварде</span></a>
       <p class="menu-phase">7. Проверки и версии</p>
-      <a href="#SRV-031"><i class="ball ball-ready"></i><span class="menu-id">SRV-031</span><span class="menu-title">Регрессия без root и без Docker</span></a>
-      <a href="#SRV-032"><i class="ball ball-ready"></i><span class="menu-id">SRV-032</span><span class="menu-title">Прогон в контейнерах Ubuntu и Debian</span></a>
+      <a href="#SRV-031"><i class="ball ball-done"></i><span class="menu-id">SRV-031</span><span class="menu-title">Регрессия без root и без Docker</span></a>
+      <a href="#SRV-032"><i class="ball ball-done"></i><span class="menu-id">SRV-032</span><span class="menu-title">Прогон в контейнерах Ubuntu и Debian</span></a>
       <a href="#SRV-033"><i class="ball ball-ready"></i><span class="menu-id">SRV-033</span><span class="menu-title">Node LTS и загрузчики с фиксированной ревизией</span></a>
       <a href="#SRV-034"><i class="ball ball-ready"></i><span class="menu-id">SRV-034</span><span class="menu-title">Проверка бана и лимита лога на ВМ</span></a>
       <p class="menu-phase">8. Аудит сервера</p>
@@ -588,7 +588,7 @@ details.ticket > summary .status { margin-left: auto; }
       <main class="wrap">
         <section class="how" id="how-to-read">
           <h2>Как читать</h2>
-          <p>План идёт сверху вниз, номера совпадают с порядком работы. Описание тикета свёрнуто и открывается по заголовку. Зелёный шарик — выполнено. Жёлтый — задачу можно делать, отдельного статуса «в работе» нет. Красный — задачу блокируют другие. В меню текущий пункт жирный, уже пройденные светлее. Следующий шаг — <a href="#SRV-031">SRV-031</a>. <a href="#SRV-032">SRV-032</a> и <a href="#SRV-033">SRV-033</a> можно делать параллельно. Проверка бана — <a href="#SRV-034">SRV-034</a>, ей нужна ВМ.</p>
+          <p>План идёт сверху вниз, номера совпадают с порядком работы. Описание тикета свёрнуто и открывается по заголовку. Зелёный шарик — выполнено. Жёлтый — задачу можно делать, отдельного статуса «в работе» нет. Красный — задачу блокируют другие. В меню текущий пункт жирный, уже пройденные светлее. Следующий шаг — <a href="#SRV-033">SRV-033</a>. Проверка бана — <a href="#SRV-034">SRV-034</a>, ей нужна ВМ.</p>
           <p class="how-counts">
             <span><i class="ball ball-done"></i>Выполнено <b data-count="done">0</b></span>
             <span><i class="ball ball-ready"></i>Можно делать <b data-count="ready">0</b></span>
@@ -1580,7 +1580,7 @@ Enter — выполнить отмеченные, номер — переклю
 
     <h2>Зачем</h2>
     <p>Авторазвёртывание не может отвечать на вопросы. Пресет — это инструкция батчу: какие скрипты, в каком порядке, какие переменные обязательны, можно ли спрашивать человека.</p>
-    <div class="note note-ok">Пресеты <code>unattended-server</code> и <code>unattended-web</code> добавлены. Список, отказ без <code>NEW_USER_LOGIN</code> и очередь без вопросов проверены локально. Полный прогон apt на Ubuntu не запускался.</div>
+    <div class="note note-ok">Пресеты <code>clean-server</code> и <code>unattended-web</code> добавлены. Список, отказ без <code>NEW_USER_LOGIN</code> и очередь без вопросов проверены локально. Полный прогон apt на Ubuntu не запускался.</div>
 
     <h2>Формат</h2>
     <p>Один пресет — один файл <code>batch/presets/&lt;id&gt;.conf</code>. Парсер на bash, без yq и python. Поля:</p>
@@ -1609,9 +1609,9 @@ STEP 1-server-setup/14-install-fail2ban.sh
 STEP 1-server-setup/15-secure-firewall.sh</code></pre>
     <p>Скрипты 20 и 30 в default не входят: они настраивают конкретного человека и без <code>TARGET_USER</code> попадут в root.</p>
 
-    <h2>Пресет unattended-server</h2>
+    <h2>Пресет clean-server</h2>
     <p>Тот же порядок, без вопросов. Для автоматической установки сервера.</p>
-    <pre><code>ID=unattended-server
+    <pre><code>ID=clean-server
 TITLE=Базовый сервер без вопросов
 INTERACTIVE=no
 
@@ -1625,7 +1625,7 @@ STEP 1-server-setup/14-install-fail2ban.sh
 STEP 1-server-setup/15-secure-firewall.sh</code></pre>
     <pre><code>export NEW_USER_LOGIN=deploy
 export NEW_USER_SSH_KEY='ssh-ed25519 AAAA... deploy@host'
-sudo -E ./batch/run.sh --preset unattended-server --yes</code></pre>
+sudo -E ./batch/run.sh --preset clean-server --yes</code></pre>
     <p><code>sudo -E</code> нужен, чтобы ключ и имя дошли до скрипта. Если переменной нет, батч пишет <code>[ERROR]</code> и не вызывает скрипт 10.</p>
     <p>Перед шагом 13 батч в этом пресете всё равно печатает <code>[WARN]</code>: сейчас будет смена порта SSH из <code>.env</code>, сессия оборвётся. Это предупреждение, не вопрос. Для автоустановки на ВМ с консолью этого достаточно. Для машины, где SSH — единственный вход, в README (SRV-022) написать, что порт в <code>.env</code> надо выставить до прогона и иметь второй канал.</p>
 
@@ -1654,8 +1654,8 @@ STEP 4-services/43-add-nginx-error-pages.sh</code></pre>
 
     <h2>Готово, когда</h2>
     <ul>
-      <li><code>./batch/run.sh --list</code> показывает <code>default</code>, <code>unattended-server</code>, <code>unattended-web</code>.</li>
-      <li>Без <code>NEW_USER_LOGIN</code> команда <code>--preset unattended-server --yes</code> выходит с <code>[ERROR]</code> до первого apt.</li>
+      <li><code>./batch/run.sh --list</code> показывает <code>default</code>, <code>clean-server</code>, <code>unattended-web</code>.</li>
+      <li>Без <code>NEW_USER_LOGIN</code> команда <code>--preset clean-server --yes</code> выходит с <code>[ERROR]</code> до первого apt.</li>
       <li>С заданными переменными тот же пресет проходит очередь без единого <code>read</code>.</li>
       <li>В git нет файла пресета с реальным ключом.</li>
     </ul>
@@ -1702,7 +1702,7 @@ STEP 4-services/43-add-nginx-error-pages.sh</code></pre>
     </ol>
     <h3>Фаза B — после SRV-019, SRV-020 и SRV-021</h3>
     <ol>
-      <li>Описать единственную точку входа <code>batch/run.sh</code>, дефолтный пресет и пример без вопросов: переменные окружения и <code>--preset unattended-server --yes</code>.</li>
+      <li>Описать единственную точку входа <code>batch/run.sh</code>, дефолтный пресет и пример без вопросов: переменные окружения и <code>--preset clean-server --yes</code>.</li>
       <li>Написать, что повторный запуск безопасен, и сослаться на поведение из SRV-019, когда оно уже в коде.</li>
     </ol>
     <h3>Фаза C — после SRV-023</h3>
@@ -2117,12 +2117,12 @@ iptables -A FORWARD -p tcp -d "$SERVER_IP" --dport "$SERVER_SSH_PORT" \
     </section>
     <h2>7. Проверки и версии</h2>
     <section class="ticket-list">
-      <details class="ticket" id="SRV-031" data-status="ready">
+      <details class="ticket" id="SRV-031" data-status="done">
         <summary>
-          <i class="ball ball-ready"></i>
+          <i class="ball ball-done"></i>
           <span class="id">SRV-031</span>
           <span class="ticket-title">Регрессия без root и без Docker</span>
-          <span class="status">Можно делать</span>
+          <span class="status">Выполнено</span>
         </summary>
         <div class="ticket-body">
 <p class="meta">
@@ -2134,7 +2134,7 @@ iptables -A FORWARD -p tcp -d "$SERVER_IP" --dport "$SERVER_SSH_PORT" \
     <h2>Что сделать</h2>
     <ol>
       <li>Одна команда <code>bash tests/run.sh</code>. Без root, без Docker, без сети. Заглушки команд, не боевые <code>apt</code>, <code>sshd</code> и <code>iptables</code>.</li>
-      <li>Пресеты: <code>--list</code>, нехватка переменной у <code>unattended-server</code> до скрипта 10, остановка очереди на первой ошибке.</li>
+      <li>Пресеты: <code>--list</code>, нехватка переменной у <code>clean-server</code> до скрипта 10, остановка очереди на первой ошибке.</li>
       <li>Форвард на заглушке: повтор шестёрки не плодит правила, ответ не <code>yes</code> не вызывает <code>iptables-restore</code>.</li>
       <li>Страницы 43 и 44: чужой <code>error_page</code> не меняется, неудачный <code>nginx -t</code> возвращает файлы, пустая заглушка для 44 — не установка.</li>
       <li>Повтор блока <code>sst</code> не переписывает файл, если байты те же.</li>
@@ -2144,14 +2144,15 @@ iptables -A FORWARD -p tcp -d "$SERVER_IP" --dport "$SERVER_SSH_PORT" \
       <li><code>bash tests/run.sh</code> на этой машине заканчивается кодом 0.</li>
       <li>В git нет ключей и нет копий <code>/etc</code>.</li>
     </ul>
+    <div class="note note-ok"><code>bash tests/run.sh</code> закончился кодом 0: 8 проверок. В git нет ключей и нет копий <code>/etc</code>. Пресет без вопросов в репозитории называется <code>clean-server</code>. Проверка политики FORWARD в скрипте 42 больше не идёт через пайп с <code>grep -q</code>: при <code>pipefail</code> найденная строка считалась отсутствующей.</div>
         </div>
       </details>
-      <details class="ticket" id="SRV-032" data-status="ready">
+      <details class="ticket" id="SRV-032" data-status="done">
         <summary>
-          <i class="ball ball-ready"></i>
+          <i class="ball ball-done"></i>
           <span class="id">SRV-032</span>
           <span class="ticket-title">Прогон в контейнерах Ubuntu и Debian</span>
-          <span class="status">Можно делать</span>
+          <span class="status">Выполнено</span>
         </summary>
         <div class="ticket-body">
 <p class="meta">
@@ -2173,6 +2174,7 @@ iptables -A FORWARD -p tcp -d "$SERVER_IP" --dport "$SERVER_SSH_PORT" \
       <li>Четыре образа заканчивают <code>bash tests/run.sh</code> с кодом 0.</li>
       <li>В инструкции к прогону написано, что установка Docker и systemd в этот контур не входят.</li>
     </ul>
+    <div class="note note-ok"><code>bash tests/containers.sh</code> закончился кодом 0: <code>ubuntu:22.04</code>, <code>ubuntu:24.04</code>, <code>debian:12</code>, <code>debian:13</code>, в каждом <code>tests: 9 ok</code>. Прогон без <code>--privileged</code> и без systemd. Скрипт 22 и скрипты 13–15 в этот контур не входят. Настоящий iptables не вызывался.</div>
         </div>
       </details>
       <details class="ticket" id="SRV-033" data-status="ready">

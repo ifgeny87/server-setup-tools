@@ -1,0 +1,4 @@
+#!/bin/bash
+printf '%s\n' "iptables-restore" >> "${IPT_STATE:?}/calls"
+cat > "${IPT_STATE:?}/restore-body"
+exit 0

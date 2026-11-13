@@ -1,0 +1,4 @@
+#!/bin/bash
+printf '%s\n' "iptables-save" >> "${IPT_STATE:?}/calls"
+dir=$(dirname -- "$0")
+exec "$dir/iptables" -S
