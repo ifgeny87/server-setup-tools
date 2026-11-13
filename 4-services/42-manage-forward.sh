@@ -591,12 +591,21 @@ do_load() {
 menu_hold=0
 menu_lines=0
 
+# Поднять курсор на n строк и стереть вниз. Коды tput должны попасть в терминал:
+# перенаправление в /dev/null оставляет старое меню и печатает новое ниже.
+menu_rewind() {
+    local n=$1
+    [ -t 1 ] || return 1
+    if tput cuu "$n" && tput ed; then
+        return 0
+    fi
+    printf '\033[%sA\033[J' "$n"
+}
+
 draw_menu() {
     local i
     if [ "$menu_hold" -eq 1 ] && [ "$menu_lines" -gt 0 ]; then
-        if tput cuu "$menu_lines" >/dev/null 2>&1; then
-            tput ed >/dev/null 2>&1 || true
-        fi
+        menu_rewind "$menu_lines" || true
     fi
     echo "Конфиг форварда: $CONF"
     echo "Постоянные правила iptables: $RULES"
