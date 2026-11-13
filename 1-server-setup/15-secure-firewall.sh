@@ -7,6 +7,8 @@ set -euo pipefail
 # INPUT и FORWARD получают политику DROP. Чужие цепочки filter, кроме правил этого скрипта, сохраняются.
 # Ответы DNS проходят как established. Отдельный вход с source-port 53 не открывается.
 # IPv6 закрывается тем же входом, если ядро его не выключило. Форвард скрипта 42 включается только после DROP на FORWARD.
+# Ответ проброса после снятия DNAT/SNAT идёт на порт клиента, поэтому в FORWARD нужно RELATED,ESTABLISHED.
+# Правило в DOCKER-USER этого не заменяет: переход туда добавляет Docker, а этот скрипт часто выполняется раньше.
 
 # Собирает таблицу filter IPv4. На stdin — нормализованный iptables-save -t filter.
 # Правила печатаются по цепочкам, как iptables-save, чтобы повтор не вызывал restore.
@@ -34,6 +36,7 @@ build_v4_filter() {
         /^-A INPUT / { next }
         /^-A OUTPUT / && $0 ~ /--dport 53 / && $0 ~ /-j ACCEPT$/ { next }
         docker == "yes" && /^-A FORWARD / && $0 ~ /docker0/ && $0 ~ /-j ACCEPT$/ { next }
+        /^-A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT$/ { next }
         /^-A DOCKER-USER / && $0 ~ /--ctstate RELATED,ESTABLISHED/ && $0 ~ /-j ACCEPT$/ { next }
         { rule[++nr] = $0; next }
         END {
@@ -60,6 +63,7 @@ build_v4_filter() {
                 cname = chain[i]
                 sub(/^:/, "", cname)
                 sub(/ .*/, "", cname)
+                if (cname == "FORWARD") print "-A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT"
                 for (j = 1; j <= nf; j++) {
                     split(f2b[j], parts, " ")
                     if (parts[2] == cname) print f2b[j]

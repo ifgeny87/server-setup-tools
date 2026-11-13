@@ -27,7 +27,7 @@ rm -f /etc/nginx/sites-enabled/default
 
 FILE=/etc/nginx/conf.d/default.conf
 logr "Проверяем дефолтный конфиг nginx: $FILE"
-# Страницы ошибок подключает только 4-services/43-nginx-error-pages.sh.
+# Страницы ошибок подключает только 4-services/43-add-nginx-error-pages.sh.
 DESIRED=$(cat <<EOF
 # BEGIN sst nginx-default
 server {

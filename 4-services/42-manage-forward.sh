@@ -318,6 +318,17 @@ ask_value() {
     done
 }
 
+# Ответ сервера после снятия NAT не совпадает с --dport правила форварда. При политике DROP его нужно пустить отдельно.
+ensure_forward_established() {
+    if iptables -C FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT 2>/dev/null; then
+        return 0
+    fi
+    if ! iptables -I FORWARD 1 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT; then
+        logerr "Не удалось добавить RELATED,ESTABLISHED в FORWARD"
+        return 1
+    fi
+}
+
 # Пишет sysctl только когда FORWARD уже DROP. Иначе хост маршрутизирует чужой трафик.
 enable_forward_if_needed() {
     local current
@@ -404,6 +415,7 @@ do_add() {
         return 1
     fi
     enable_forward_if_needed || return 1
+    ensure_forward_established || return 1
     id=$(next_id)
     ensure_rule nat dnat tcp "$lssh" "" "$sip:$sssh" \
         -t nat -A PREROUTING -p tcp --dport "$lssh" \

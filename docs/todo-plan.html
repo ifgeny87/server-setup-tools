@@ -1649,7 +1649,7 @@ STEP 2-install-software/24-install-nginx-certbot.sh
 NEED CERTBOT_EMAIL
 STEP 4-services/41-add-ssl-certificate.sh
 NEED DOMAIN
-STEP 4-services/43-nginx-error-pages.sh</code></pre>
+STEP 4-services/43-add-nginx-error-pages.sh</code></pre>
     <p>Node, oh-my-zsh и монитор Telegram в этот пресет не входят: для них отдельные переменные и другой сценарий. Монитор подключать отдельным пресетом позже, когда SRV-018 починит путь к env и пакеты Python. В этот тикет третий обязательный файл не добавлять, чтобы не описывать ещё не починенный 40 как готовый автоматический шаг.</p>
 
     <h2>Готово, когда</h2>
@@ -1711,7 +1711,7 @@ STEP 4-services/43-nginx-error-pages.sh</code></pre>
     </ol>
     <h3>Фаза D — после SRV-024</h3>
     <ol>
-      <li>Добавить <code>4-services/43-nginx-error-pages.sh</code>: запускать после 24, повтор безопасен, страница ошибок общая для серверов из 24 и 41.</li>
+      <li>Добавить <code>4-services/43-add-nginx-error-pages.sh</code>: запускать после 24, повтор безопасен, страница ошибок общая для серверов из 24 и 41.</li>
     </ol>
     <h3>Фаза E — после SRV-025 и SRV-026</h3>
     <ol>
@@ -1877,7 +1877,7 @@ iptables -A FORWARD -p tcp -d "$SERVER_IP" --dport "$SERVER_SSH_PORT" \
         <div class="ticket-body">
 <p class="meta">
       <span class="tag">nginx</span>
-      <span>новый файл <code>4-services/43-nginx-error-pages.sh</code></span>
+      <span>новый файл <code>4-services/43-add-nginx-error-pages.sh</code></span>
       <span>после <a href="#SRV-013">SRV-013</a>, шаблоны 24 и 41 уже есть</span>
     </p>
 
@@ -1886,7 +1886,7 @@ iptables -A FORWARD -p tcp -d "$SERVER_IP" --dport "$SERVER_SSH_PORT" \
 
     <h2>Что сделать</h2>
     <ol>
-      <li>Скрипт <code>4-services/43-nginx-error-pages.sh</code>: <code>set -euo pipefail</code>, <code>common/_misc.sh</code>, <code>checkRoot</code>, <code>loghead</code>. Нет бинаря <code>nginx</code> — <code>[ERROR]</code> и выход. Пакет здесь не ставить, это скрипт 24.</li>
+      <li>Скрипт <code>4-services/43-add-nginx-error-pages.sh</code>: <code>set -euo pipefail</code>, <code>common/_misc.sh</code>, <code>checkRoot</code>, <code>loghead</code>. Нет бинаря <code>nginx</code> — <code>[ERROR]</code> и выход. Пакет здесь не ставить, это скрипт 24.</li>
       <li>Страница <code>/var/www/nginx-errors/error.html</code>, один файл. CSS в <code>&lt;style&gt;</code>, JS в <code>&lt;script&gt;</code>. Без <code>img</code>, без <code>url()</code>, без <code>transition</code>, <code>animation</code> и <code>@keyframes</code>. Текст короткий: строка приглашения, код, три поля. Без ASCII-арта и без обфускации.</li>
       <li>Оформление через <code>color-scheme: light dark</code> и <code>prefers-color-scheme</code>. Светлая тема — светлый фон и тёмный моноширинный текст. Тёмная — тёмный фон и зелёный текст терминала. Одного инвертирования цветов мало: обе темы должны читаться.</li>
       <li>Значения печатает nginx SSI, не JS. JS только копирует код из заголовка в <code>document.title</code>. На странице четыре поля: код ответа (<code>$status</code>), версия (<code>nginx/$nginx_version</code>), адрес (<code>$scheme://$host$request_uri</code>), время запроса (<code>$time_iso8601</code>).</li>
@@ -1916,7 +1916,7 @@ iptables -A FORWARD -p tcp -d "$SERVER_IP" --dport "$SERVER_SSH_PORT" \
         <div class="ticket-body">
 <p class="meta">
       <span class="tag">nginx</span>
-      <span>правка <code>4-services/43-nginx-error-pages.sh</code>, <code>2-install-software/24-install-nginx-certbot.sh</code>, <code>4-services/41-add-ssl-certificate.sh</code></span>
+      <span>правка <code>4-services/43-add-nginx-error-pages.sh</code>, <code>2-install-software/24-install-nginx-certbot.sh</code>, <code>4-services/41-add-ssl-certificate.sh</code></span>
       <span>после <a href="#SRV-024">SRV-024</a></span>
     </p>
 

@@ -40,7 +40,7 @@ fi
 FILE=/etc/nginx/conf.d/${DOMAIN}.conf
 BLOCK_NAME="nginx-${DOMAIN}"
 BEGIN="# BEGIN sst ${BLOCK_NAME}"
-# Страницы ошибок подключает только 43-nginx-error-pages.sh, не этот шаблон.
+# Страницы ошибок подключает только 43-add-nginx-error-pages.sh, не этот шаблон.
 BODY=$(cat <<EOF
 server {
     listen 443 ssl;
