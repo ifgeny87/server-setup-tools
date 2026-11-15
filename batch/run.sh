@@ -22,6 +22,7 @@ batch_prompt=0
 menu_pos=0
 menu_hold=0
 menu_lines=0
+add_choice=()
 
 usage() {
     echo "Использование: sudo $0 [--preset <id>] [--yes] [--list]"
@@ -249,6 +250,38 @@ import_needs_for() {
     done
 }
 
+# Скрипты каталогов настройки, которых ещё нет в наборе. Порядок — по пути.
+collect_add_choices() {
+    local dir file rel i skip
+    local -a found=()
+    add_choice=()
+    for dir in 1-server-setup 2-install-software 3-user-setup 4-services; do
+        for file in "$ROOT/$dir"/*.sh; do
+            [ -f "$file" ] || continue
+            rel="${file#"$ROOT"/}"
+            path_ok "$rel" || continue
+            skip=0
+            if [ "${#step_path[@]}" -gt 0 ]; then
+                for i in "${!step_path[@]}"; do
+                    if [ "${step_path[$i]}" = "$rel" ]; then
+                        skip=1
+                        break
+                    fi
+                done
+            fi
+            [ "$skip" -eq 1 ] && continue
+            found+=("$rel")
+        done
+    done
+    if [ "${#found[@]}" -eq 0 ]; then
+        return 0
+    fi
+    while IFS= read -r rel; do
+        [ -n "$rel" ] || continue
+        add_choice+=("$rel")
+    done < <(printf '%s\n' "${found[@]}" | LC_ALL=C sort)
+}
+
 # Добавляет скрипт в конец набора и отмечает его. Уже присутствующий только отмечается.
 append_step() {
     local path=$1 i idx
@@ -291,6 +324,16 @@ read_key() {
     fi
 }
 
+# Поднять курсор на n строк и стереть вниз. Коды tput идут в терминал, не в /dev/null.
+menu_rewind() {
+    local n=$1
+    [ -t 1 ] || return 1
+    if tput cuu "$n" && tput ed; then
+        return 0
+    fi
+    printf '\033[%sA\033[J' "$n"
+}
+
 # Список шагов пресета, затем пункты добавить, выполнить и выйти.
 draw_batch_menu() {
     local i mark plain title rows action_at n
@@ -298,9 +341,7 @@ draw_batch_menu() {
     action_at=${#step_path[@]}
     n=0
     if [ "$menu_hold" -eq 1 ] && [ "$menu_lines" -gt 0 ]; then
-        if tput cuu "$menu_lines" >/dev/null 2>&1; then
-            tput ed >/dev/null 2>&1 || true
-        fi
+        menu_rewind "$menu_lines" || true
     fi
     title="Пресет: $preset_id"
     if [ -n "$preset_title" ]; then
@@ -338,9 +379,77 @@ draw_batch_menu() {
     menu_hold=1
 }
 
+# Список команд, которых нет в наборе, и пункт «Назад». pos — текущая строка.
+draw_add_menu() {
+    local pos=$1 i
+    if [ "$add_hold" -eq 1 ] && [ "$add_lines" -gt 0 ]; then
+        menu_rewind "$add_lines" || true
+    fi
+    printf '%b%s%b\n' "$COL_FG_WHITE" "Добавить команду" "$COL_RES"
+    for i in "${!add_choice[@]}"; do
+        if [ "$i" -eq "$pos" ]; then
+            tput rev 2>/dev/null || true
+            printf '  %s\n' "${add_choice[$i]}"
+            tput sgr0 2>/dev/null || true
+        else
+            printf '  %s\n' "${add_choice[$i]}"
+        fi
+    done
+    if [ "$pos" -eq "${#add_choice[@]}" ]; then
+        tput rev 2>/dev/null || true
+        printf '  %s\n' "Назад"
+        tput sgr0 2>/dev/null || true
+    else
+        printf '  %s\n' "Назад"
+    fi
+    printf '%b%s%b\n' "$COL_FG_GRAY" "Стрелки — выбор, Enter — добавить, q — назад" "$COL_RES"
+    add_lines=$((${#add_choice[@]} + 3))
+    add_hold=1
+}
+
+# Меню добавления вместо ручного пути. 0 — вернулись в список шагов.
+pick_step() {
+    local pos=0 rows choice
+    collect_add_choices
+    if [ "$menu_hold" -eq 1 ] && [ "$menu_lines" -gt 0 ]; then
+        menu_rewind "$menu_lines" || true
+    fi
+    menu_hold=0
+    if [ "${#add_choice[@]}" -eq 0 ]; then
+        logr "Нечего добавить: все команды уже в списке"
+        return 0
+    fi
+    add_hold=0
+    add_lines=0
+    while true; do
+        draw_add_menu "$pos"
+        read_key || return 1
+        rows=$((${#add_choice[@]} + 1))
+        case "$KEY" in
+            ESC'[A') pos=$(((pos + rows - 1) % rows)) ;;
+            ESC'[B') pos=$(((pos + 1) % rows)) ;;
+            q)
+                menu_rewind "$add_lines" || true
+                add_hold=0
+                return 0
+                ;;
+            ENTER)
+                menu_rewind "$add_lines" || true
+                add_hold=0
+                if [ "$pos" -eq "${#add_choice[@]}" ]; then
+                    return 0
+                fi
+                choice="${add_choice[$pos]}"
+                append_step "$choice"
+                return 0
+                ;;
+        esac
+    done
+}
+
 # Возвращает 0, когда набор подтверждён. 2 — выход без запуска.
 confirm_steps() {
-    local rows idx path
+    local rows idx
     menu_pos=0
     menu_hold=0
     while true; do
@@ -360,18 +469,7 @@ confirm_steps() {
                         step_enabled[$idx]=1
                     fi
                 elif [ "$menu_pos" -eq $((${#step_path[@]})) ]; then
-                    menu_hold=0
-                    if ! IFS= read -r -p "Путь скрипта от корня репозитория: " path; then
-                        logerr "Ввод закрыт"
-                        return 1
-                    fi
-                    if [ -z "$path" ]; then
-                        logr "Добавление отменено"
-                    elif ! path_ok "$path"; then
-                        logr "Нет такого скрипта: $path"
-                    else
-                        append_step "$path"
-                    fi
+                    pick_step || return 1
                 elif [ "$menu_pos" -eq $((${#step_path[@]} + 1)) ]; then
                     menu_hold=0
                     return 0

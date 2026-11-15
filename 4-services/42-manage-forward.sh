@@ -607,9 +607,6 @@ draw_menu() {
     if [ "$menu_hold" -eq 1 ] && [ "$menu_lines" -gt 0 ]; then
         menu_rewind "$menu_lines" || true
     fi
-    echo "Конфиг форварда: $CONF"
-    echo "Постоянные правила iptables: $RULES"
-    echo
     for i in 0 1 2 3 4 5; do
         if [ "$i" -eq "$menu_pos" ]; then
             tput rev 2>/dev/null || true
@@ -617,7 +614,7 @@ draw_menu() {
         printf '  %s\n' "${MENU_ITEMS[$i]}"
         tput sgr0 2>/dev/null || true
     done
-    menu_lines=9
+    menu_lines=6
     menu_hold=1
 }
 

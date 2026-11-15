@@ -80,6 +80,29 @@ test_missing_var() {
     ok "missing NEW_USER_LOGIN до скрипта 10"
 }
 
+# В список добавления не попадают шаги, которые уже стоят в наборе.
+test_add_choices() {
+    capture env ROOT="$ROOT" bash -s << 'EOF'
+set -euo pipefail
+source "$ROOT/batch/run.sh"
+step_path=("1-server-setup/10-prepare-tools.sh" "4-services/42-manage-forward.sh")
+collect_add_choices
+printf '%s\n' "${add_choice[@]}"
+EOF
+    [ "$CAP_CODE" -eq 0 ] || fail "add: код $CAP_CODE" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx '1-server-setup/10-prepare-tools.sh' \
+        && fail "add: шаг из набора остался в списке" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx '4-services/42-manage-forward.sh' \
+        && fail "add: 42 остался в списке" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx '1-server-setup/11-remove-mail-server.sh' \
+        || fail "add: нет скрипта вне набора" "$CAP_OUT"
+    local n uniq
+    n=$(printf '%s\n' "$CAP_OUT" | grep -c '\.sh$' || true)
+    uniq=$(printf '%s\n' "$CAP_OUT" | grep '\.sh$' | sort -u | wc -l | tr -d ' ')
+    [ "$n" = "$uniq" ] || fail "add: в списке есть повторы" "$CAP_OUT"
+    ok "добавление без команд, которые уже в наборе"
+}
+
 # Первый шаг падает на заглушке apt-get, второй не стартует.
 test_stop_on_error() {
     local log
@@ -421,6 +444,7 @@ EOF
 test_list
 test_launch_env
 test_missing_var
+test_add_choices
 test_stop_on_error
 test_forward
 test_foreign_error_page
