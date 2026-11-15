@@ -103,6 +103,39 @@ EOF
     ok "добавление без команд, которые уже в наборе"
 }
 
+# Пробел отмечает несколько команд, Enter кладёт в набор только их.
+test_add_marks() {
+    capture env ROOT="$ROOT" bash -s << 'EOF'
+set -euo pipefail
+source "$ROOT/batch/run.sh"
+step_path=("1-server-setup/10-prepare-tools.sh")
+step_user=(0)
+step_enabled=(1)
+toggle_step_at 0
+add_choice=("1-server-setup/11-remove-mail-server.sh" "4-services/42-manage-forward.sh")
+add_on=(1 1)
+commit_add_selection 0
+printf 'enabled:%s\n' "${step_enabled[0]}"
+printf '%s\n' "${step_path[@]}"
+add_choice=("3-user-setup/30-add-user.sh" "4-services/40-setup-cron.sh")
+add_on=(0 0)
+commit_add_selection 1
+printf 'one:%s\n' "${step_path[$((${#step_path[@]} - 1))]}"
+EOF
+    [ "$CAP_CODE" -eq 0 ] || fail "marks: код $CAP_CODE" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx 'enabled:0' \
+        || fail "marks: пробел не снял шаг" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx '1-server-setup/11-remove-mail-server.sh' \
+        || fail "marks: нет первой отметки" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx '4-services/42-manage-forward.sh' \
+        || fail "marks: нет второй отметки" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx 'one:4-services/40-setup-cron.sh' \
+        || fail "marks: без отметок не взята строка курсора" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx '3-user-setup/30-add-user.sh' \
+        && fail "marks: неотмеченная команда попала в набор" "$CAP_OUT"
+    ok "пробел отмечает шаги и несколько команд"
+}
+
 # Первый шаг падает на заглушке apt-get, второй не стартует.
 test_stop_on_error() {
     local log
@@ -445,6 +478,7 @@ test_list
 test_launch_env
 test_missing_var
 test_add_choices
+test_add_marks
 test_stop_on_error
 test_forward
 test_foreign_error_page

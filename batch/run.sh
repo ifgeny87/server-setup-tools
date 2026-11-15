@@ -23,6 +23,7 @@ menu_pos=0
 menu_hold=0
 menu_lines=0
 add_choice=()
+add_on=()
 
 usage() {
     echo "Использование: sudo $0 [--preset <id>] [--yes] [--list]"
@@ -309,6 +310,34 @@ append_step() {
     logr "Добавлен шаг: $path"
 }
 
+# Переключает отметку шага в наборе.
+toggle_step_at() {
+    local idx=$1
+    if [ "${step_enabled[$idx]}" = 1 ]; then
+        step_enabled[$idx]=0
+    else
+        step_enabled[$idx]=1
+    fi
+}
+
+# Добавляет отмеченные команды. Если отметок нет, добавляет строку под курсором.
+commit_add_selection() {
+    local pos=$1 i any=0
+    for i in "${!add_on[@]}"; do
+        [ "${add_on[$i]}" = 1 ] && any=1
+    done
+    if [ "$any" -eq 1 ]; then
+        for i in "${!add_choice[@]}"; do
+            [ "${add_on[$i]}" = 1 ] || continue
+            append_step "${add_choice[$i]}"
+        done
+        return 0
+    fi
+    if [ "$pos" -lt "${#add_choice[@]}" ]; then
+        append_step "${add_choice[$pos]}"
+    fi
+}
+
 # Стрелки и Enter, как в скрипте 42. Экран целиком не стирается.
 read_key() {
     local key rest
@@ -364,7 +393,7 @@ draw_batch_menu() {
             printf '  %s  %s\n' "$mark" "${step_path[$i]}"
         fi
     done
-    for i in "Добавить команду" "Выполнить" "Выход"; do
+    for i in "a  Добавить команду" "Выполнить" "Выход"; do
         if [ "$menu_pos" -eq $((action_at + n)) ]; then
             tput rev 2>/dev/null || true
             printf '  %s\n' "$i"
@@ -374,25 +403,32 @@ draw_batch_menu() {
         fi
         n=$((n + 1))
     done
-    printf '%b%s%b\n' "$COL_FG_GRAY" "Стрелки — выбор, Enter — переключить или подтвердить, q — выход" "$COL_RES"
+    printf '%b%s%b\n' "$COL_FG_GRAY" "Стрелки — выбор, пробел — отметить, a — добавить, Enter — подтвердить, q — выход" "$COL_RES"
     menu_lines=$((rows + 2))
     menu_hold=1
 }
 
 # Список команд, которых нет в наборе, и пункт «Назад». pos — текущая строка.
 draw_add_menu() {
-    local pos=$1 i
+    local pos=$1 i plain mark
     if [ "$add_hold" -eq 1 ] && [ "$add_lines" -gt 0 ]; then
         menu_rewind "$add_lines" || true
     fi
     printf '%b%s%b\n' "$COL_FG_WHITE" "Добавить команду" "$COL_RES"
     for i in "${!add_choice[@]}"; do
+        if [ "${add_on[$i]}" = 1 ]; then
+            plain="[x]"
+            mark=$(printf '%b%s%b' "$COL_LIME" "[x]" "$COL_RES")
+        else
+            plain="[ ]"
+            mark=$(printf '%b%s%b' "$COL_FG_GRAY" "[ ]" "$COL_RES")
+        fi
         if [ "$i" -eq "$pos" ]; then
             tput rev 2>/dev/null || true
-            printf '  %s\n' "${add_choice[$i]}"
+            printf '  %s  %s\n' "$plain" "${add_choice[$i]}"
             tput sgr0 2>/dev/null || true
         else
-            printf '  %s\n' "${add_choice[$i]}"
+            printf '  %s  %s\n' "$mark" "${add_choice[$i]}"
         fi
     done
     if [ "$pos" -eq "${#add_choice[@]}" ]; then
@@ -402,7 +438,7 @@ draw_add_menu() {
     else
         printf '  %s\n' "Назад"
     fi
-    printf '%b%s%b\n' "$COL_FG_GRAY" "Стрелки — выбор, Enter — добавить, q — назад" "$COL_RES"
+    printf '%b%s%b\n' "$COL_FG_GRAY" "Стрелки — выбор, пробел — отметить, Enter — добавить, q — назад" "$COL_RES"
     add_lines=$((${#add_choice[@]} + 3))
     add_hold=1
 }
@@ -421,6 +457,10 @@ pick_step() {
     fi
     add_hold=0
     add_lines=0
+    add_on=()
+    for choice in "${add_choice[@]}"; do
+        add_on+=(0)
+    done
     while true; do
         draw_add_menu "$pos"
         read_key || return 1
@@ -428,6 +468,15 @@ pick_step() {
         case "$KEY" in
             ESC'[A') pos=$(((pos + rows - 1) % rows)) ;;
             ESC'[B') pos=$(((pos + 1) % rows)) ;;
+            ' ')
+                if [ "$pos" -lt "${#add_choice[@]}" ]; then
+                    if [ "${add_on[$pos]}" = 1 ]; then
+                        add_on[$pos]=0
+                    else
+                        add_on[$pos]=1
+                    fi
+                fi
+                ;;
             q)
                 menu_rewind "$add_lines" || true
                 add_hold=0
@@ -439,8 +488,7 @@ pick_step() {
                 if [ "$pos" -eq "${#add_choice[@]}" ]; then
                     return 0
                 fi
-                choice="${add_choice[$pos]}"
-                append_step "$choice"
+                commit_add_selection "$pos"
                 return 0
                 ;;
         esac
@@ -449,7 +497,7 @@ pick_step() {
 
 # Возвращает 0, когда набор подтверждён. 2 — выход без запуска.
 confirm_steps() {
-    local rows idx
+    local rows
     menu_pos=0
     menu_hold=0
     while true; do
@@ -459,21 +507,22 @@ confirm_steps() {
         case "$KEY" in
             ESC'[A') menu_pos=$(((menu_pos + rows - 1) % rows)) ;;
             ESC'[B') menu_pos=$(((menu_pos + 1) % rows)) ;;
+            ' ')
+                if [ "$menu_pos" -lt "${#step_path[@]}" ]; then
+                    toggle_step_at "$menu_pos"
+                fi
+                ;;
+            a|A)
+                pick_step || return 1
+                ;;
             q) return 2 ;;
             ENTER)
-                if [ "$menu_pos" -lt "${#step_path[@]}" ]; then
-                    idx=$menu_pos
-                    if [ "${step_enabled[$idx]}" = 1 ]; then
-                        step_enabled[$idx]=0
-                    else
-                        step_enabled[$idx]=1
-                    fi
-                elif [ "$menu_pos" -eq $((${#step_path[@]})) ]; then
+                if [ "$menu_pos" -eq $((${#step_path[@]})) ]; then
                     pick_step || return 1
                 elif [ "$menu_pos" -eq $((${#step_path[@]} + 1)) ]; then
                     menu_hold=0
                     return 0
-                else
+                elif [ "$menu_pos" -eq $((${#step_path[@]} + 2)) ]; then
                     menu_hold=0
                     return 2
                 fi
