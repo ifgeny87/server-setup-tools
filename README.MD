@@ -8,10 +8,11 @@
 ## Клонирование
 
 ```shell
-apt-get update -y; apt-get install -y git
-cd /opt
-git clone https://github.com/ifgeny87/server-setup-tools
-cd server-setup-tools
+bash -c 'set -e
+apt-get update -y
+apt-get install -y git
+git clone https://github.com/ifgeny87/server-setup-tools /opt/server-setup-tools' && \
+cd /opt/server-setup-tools
 ```
 
 Локально можно смотреть файлы в контейнере Ubuntu. Это не замена прогона на ВМ: в контейнере нет полноценного sshd и systemd.
