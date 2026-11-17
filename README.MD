@@ -11,8 +11,8 @@
 bash -c 'set -e
 apt-get update -y
 apt-get install -y git
-git clone https://github.com/ifgeny87/server-setup-tools /opt/server-setup-tools
-cd /opt/server-setup-tools'
+git clone https://github.com/ifgeny87/server-setup-tools /opt/server-setup-tools' && \
+cd /opt/server-setup-tools
 ```
 
 Локально можно смотреть файлы в контейнере Ubuntu. Это не замена прогона на ВМ: в контейнере нет полноценного sshd и systemd.
