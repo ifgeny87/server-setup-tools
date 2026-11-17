@@ -2,7 +2,10 @@
 set -euo pipefail
 . "$(dirname -- "${BASH_SOURCE[0]}")/../common/_misc.sh" # load misc
 
-# Батч: пресет, при INTERACTIVE=prompt меню шагов, вопросы NEED, затем скрипты.
+# Батч: пресет, при INTERACTIVE=prompt меню шагов, затем скрипты.
+# Аргументы команд лежат в batch/commands.conf, не в пресете.
+# Без интерактива пустой обязательный аргумент останавливает батч до скриптов.
+# В интерактиве аргумент спрашивает сам скрипт, когда до него доходит очередь.
 # Первая ошибка дочернего скрипта останавливает очередь.
 # batch_prompt=1 только когда пресет просит ввод, есть терминал и нет --yes.
 
@@ -15,9 +18,12 @@ preset_interactive=""
 step_path=()
 step_user=()
 step_enabled=()
-need_step=()
-need_var=()
-need_prompt=()
+cmd_path=()
+cmd_user=()
+arg_cmd=()
+arg_name=()
+arg_type=()
+arg_required=()
 batch_prompt=0
 menu_pos=0
 menu_hold=0
@@ -29,25 +35,22 @@ usage() {
     echo "Использование: sudo $0 [--preset <id>] [--yes] [--list]"
 }
 
-# Сбрасывает набор и читает batch/presets/<id>.conf. NEED относится к предыдущему STEP.
+# Сбрасывает набор и читает batch/presets/<id>.conf. Аргументы берёт из каталога команд.
 load_preset() {
     local id="$1"
     local file="$PRESET_DIR/${id}.conf"
-    local line key val rest prompt path
-    local step_index=-1
+    local line key val rest path
     if [ ! -f "$file" ]; then
         logerr "Нет пресета: $id"
         return 1
     fi
+    load_commands || return 1
     preset_id=""
     preset_title=""
     preset_interactive=""
     step_path=()
     step_user=()
     step_enabled=()
-    need_step=()
-    need_var=()
-    need_prompt=()
     while IFS= read -r line || [ -n "$line" ]; do
         line="${line#"${line%%[![:space:]]*}"}"
         line="${line%"${line##*[![:space:]]}"}"
@@ -68,32 +71,17 @@ load_preset() {
                 return 1
             fi
             step_path+=("$path")
-            if [ "$rest" = "user" ] || is_user_script "$path"; then
+            if [ "$rest" = "user" ] || [ "$(step_runs_as_user "$path")" = 1 ]; then
                 step_user+=(1)
             else
                 step_user+=(0)
             fi
             step_enabled+=(1)
-            step_index=$((${#step_path[@]} - 1))
             continue
         fi
         if [[ "$line" == NEED\ * ]]; then
-            if [ "$step_index" -lt 0 ]; then
-                logerr "NEED без STEP в пресете $id"
-                return 1
-            fi
-            rest="${line#NEED }"
-            key="${rest%%[[:space:]]*}"
-            if [[ ! "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
-                logerr "Некорректная переменная в пресете $id: $key"
-                return 1
-            fi
-            prompt=""
-            if [[ "$rest" =~ prompt=\"(.*)\" ]]; then
-                prompt="${BASH_REMATCH[1]}"
-            fi
-            add_need "$step_index" "$key" "$prompt"
-            continue
+            logerr "NEED пишут в batch/commands.conf, не в пресете $id"
+            return 1
         fi
         if [[ "$line" != *=* ]]; then
             logerr "Не понял строку пресета $id: $line"
@@ -137,8 +125,9 @@ load_preset() {
             logerr "Нет файла шага: $path"
             return 1
         fi
-        if [ "${step_user[$i]}" = 1 ]; then
-            add_need "$i" "TARGET_USER" "Пользователь, от которого запустить $path"
+        if ! cmd_index "$path" >/dev/null; then
+            logerr "Нет команды в batch/commands.conf: $path"
+            return 1
         fi
     done
     local local_file="$PRESET_DIR/${id}.local"
@@ -158,28 +147,140 @@ abs_file() {
     printf '%s/%s\n' "$dir" "$base"
 }
 
-# Шаги 20 и 30 всегда от TARGET_USER, даже без суффикса user в пресете.
-is_user_script() {
+# Число в начале имени файла. Без числа команда встаёт в конец.
+script_code() {
     local base
     base=$(basename -- "$1")
-    [ "$base" = "20-install-oh-my-zsh.sh" ] || [ "$base" = "30-setup-user-tools.sh" ]
+    if [[ "$base" =~ ^([0-9]+) ]]; then
+        printf '%s' "$((10#${BASH_REMATCH[1]}))"
+        return 0
+    fi
+    printf '9999'
 }
 
-add_need() {
-    local idx="$1" var="$2" prompt="$3" j
-    if [ "${#need_var[@]}" -gt 0 ]; then
-        for j in "${!need_var[@]}"; do
-            if [ "${need_step[$j]}" = "$idx" ] && [ "${need_var[$j]}" = "$var" ]; then
-                if [ -n "$prompt" ] && [ -z "${need_prompt[$j]}" ]; then
-                    need_prompt[$j]="$prompt"
-                fi
-                return 0
-            fi
-        done
+# Индекс пути в каталоге команд. 1, если такой команды нет.
+cmd_index() {
+    local path=$1 i
+    for i in "${!cmd_path[@]}"; do
+        if [ "${cmd_path[$i]}" = "$path" ]; then
+            printf '%s' "$i"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# 1, если каталог говорит запускать скрипт от TARGET_USER.
+step_runs_as_user() {
+    local path=$1 idx
+    if [ "${#cmd_path[@]}" -eq 0 ]; then
+        printf '0'
+        return 0
     fi
-    need_step+=("$idx")
-    need_var+=("$var")
-    need_prompt+=("$prompt")
+    idx=$(cmd_index "$path") || {
+        printf '0'
+        return 0
+    }
+    printf '%s' "${cmd_user[$idx]}"
+}
+
+# Читает batch/commands.conf. Команды уже отсортированы по коду в имени файла.
+load_commands() {
+    local file="$ROOT/batch/commands.conf"
+    local line rest path key typ mode extra idx prev_code prev_path code
+    cmd_path=()
+    cmd_user=()
+    arg_cmd=()
+    arg_name=()
+    arg_type=()
+    arg_required=()
+    idx=-1
+    prev_code=-1
+    prev_path=""
+    if [ ! -f "$file" ]; then
+        logerr "Нет файла команд: $file"
+        return 1
+    fi
+    while IFS= read -r line || [ -n "$line" ]; do
+        line="${line#"${line%%[![:space:]]*}"}"
+        line="${line%"${line##*[![:space:]]}"}"
+        [ -z "$line" ] && continue
+        [[ "$line" == \#* ]] && continue
+        if [[ "$line" == CMD\ * ]]; then
+            path="${line#CMD }"
+            path="${path#"${path%%[![:space:]]*}"}"
+            path="${path%%[[:space:]]*}"
+            if ! path_ok "$path"; then
+                logerr "Нет файла команды: $path"
+                return 1
+            fi
+            if cmd_index "$path" >/dev/null; then
+                logerr "Команда повторяется: $path"
+                return 1
+            fi
+            code=$(script_code "$path")
+            if [ "$prev_code" -gt "$code" ] || { [ "$prev_code" -eq "$code" ] && [[ "$prev_path" > "$path" ]]; }; then
+                logerr "Команды в batch/commands.conf не по коду файла: $path"
+                return 1
+            fi
+            cmd_path+=("$path")
+            cmd_user+=(0)
+            idx=$((${#cmd_path[@]} - 1))
+            prev_code=$code
+            prev_path=$path
+            continue
+        fi
+        if [ "$idx" -lt 0 ]; then
+            logerr "Строка без CMD в batch/commands.conf: $line"
+            return 1
+        fi
+        if [ "$line" = "RUN user" ]; then
+            cmd_user[$idx]=1
+            continue
+        fi
+        if [[ "$line" == ARG\ * ]]; then
+            rest="${line#ARG }"
+            extra=""
+            read -r key typ mode extra <<< "$rest"
+            if [ -n "$extra" ]; then
+                logerr "Лишнее в ARG: $line"
+                return 1
+            fi
+            if [[ ! "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+                logerr "Некорректная переменная в batch/commands.conf: $key"
+                return 1
+            fi
+            case "$typ" in
+                string|ssh-key|email|domain|user|version|token|flag|port|ip) ;;
+                *)
+                    logerr "Неизвестный тип аргумента $typ у $key"
+                    return 1
+                    ;;
+            esac
+            case "$mode" in
+                required|optional) ;;
+                *)
+                    logerr "Неизвестный режим аргумента $mode у $key"
+                    return 1
+                    ;;
+            esac
+            arg_cmd+=("$idx")
+            arg_name+=("$key")
+            arg_type+=("$typ")
+            if [ "$mode" = "required" ]; then
+                arg_required+=(1)
+            else
+                arg_required+=(0)
+            fi
+            continue
+        fi
+        logerr "Не понял строку batch/commands.conf: $line"
+        return 1
+    done < "$file"
+    if [ "${#cmd_path[@]}" -eq 0 ]; then
+        logerr "В batch/commands.conf нет команд"
+        return 1
+    fi
 }
 
 print_list() {
@@ -216,97 +317,78 @@ path_ok() {
     [ -f "$ROOT/$path" ]
 }
 
-# NEED этого пути из всех пресетов. Повтор той же переменной не дублируется.
-import_needs_for() {
-    local path=$1 idx=$2 file line rest key prompt step_here
-    for file in "$PRESET_DIR"/*.conf; do
-        [ -f "$file" ] || continue
-        step_here=0
-        while IFS= read -r line || [ -n "$line" ]; do
-            line="${line#"${line%%[![:space:]]*}"}"
-            line="${line%"${line##*[![:space:]]}"}"
-            [ -z "$line" ] && continue
-            [[ "$line" == \#* ]] && continue
-            if [[ "$line" == STEP\ * ]]; then
-                rest="${line#STEP }"
-                rest="${rest#"${rest%%[![:space:]]*}"}"
-                rest="${rest%%[[:space:]]*}"
-                if [ "$rest" = "$path" ]; then
-                    step_here=1
-                else
-                    step_here=0
+# Команды каталога, которых ещё нет в наборе. Порядок — как в commands.conf.
+collect_add_choices() {
+    local i j path skip
+    add_choice=()
+    for i in "${!cmd_path[@]}"; do
+        path="${cmd_path[$i]}"
+        skip=0
+        if [ "${#step_path[@]}" -gt 0 ]; then
+            for j in "${!step_path[@]}"; do
+                if [ "${step_path[$j]}" = "$path" ]; then
+                    skip=1
+                    break
                 fi
-                continue
-            fi
-            if [ "$step_here" -eq 1 ] && [[ "$line" == NEED\ * ]]; then
-                rest="${line#NEED }"
-                key="${rest%%[[:space:]]*}"
-                prompt=""
-                if [[ "$rest" =~ prompt=\"(.*)\" ]]; then
-                    prompt="${BASH_REMATCH[1]}"
-                fi
-                add_need "$idx" "$key" "$prompt"
-            fi
-        done < "$file"
+            done
+        fi
+        [ "$skip" -eq 1 ] && continue
+        add_choice+=("$path")
     done
 }
 
-# Скрипты каталогов настройки, которых ещё нет в наборе. Порядок — по пути.
-collect_add_choices() {
-    local dir file rel i skip
-    local -a found=()
-    add_choice=()
-    for dir in 1-server-setup 2-install-software 3-user-setup 4-services; do
-        for file in "$ROOT/$dir"/*.sh; do
-            [ -f "$file" ] || continue
-            rel="${file#"$ROOT"/}"
-            path_ok "$rel" || continue
-            skip=0
-            if [ "${#step_path[@]}" -gt 0 ]; then
-                for i in "${!step_path[@]}"; do
-                    if [ "${step_path[$i]}" = "$rel" ]; then
-                        skip=1
-                        break
-                    fi
-                done
+# Вставляет скрипт по числу в имени файла и отмечает его. Уже присутствующий только отмечается.
+insert_step() {
+    local path=$1 i code new_code placed=0 user
+    local -a np=() nu=() ne=()
+    if [ "${#step_path[@]}" -gt 0 ]; then
+        for i in "${!step_path[@]}"; do
+            if [ "${step_path[$i]}" = "$path" ]; then
+                step_enabled[$i]=1
+                menu_pos=$i
+                logr "Уже в наборе, отмечен: $path"
+                return 0
             fi
-            [ "$skip" -eq 1 ] && continue
-            found+=("$rel")
         done
-    done
-    if [ "${#found[@]}" -eq 0 ]; then
+    fi
+    new_code=$(script_code "$path")
+    user=$(step_runs_as_user "$path")
+    if [ "${#step_path[@]}" -eq 0 ]; then
+        step_path=("$path")
+        step_user=("$user")
+        step_enabled=(1)
+        menu_pos=0
+        logr "Добавлен шаг: $path"
         return 0
     fi
-    while IFS= read -r rel; do
-        [ -n "$rel" ] || continue
-        add_choice+=("$rel")
-    done < <(printf '%s\n' "${found[@]}" | LC_ALL=C sort)
-}
-
-# Добавляет скрипт в конец набора и отмечает его. Уже присутствующий только отмечается.
-append_step() {
-    local path=$1 i idx
+    for i in "${!step_path[@]}"; do
+        if [ "$placed" -eq 0 ]; then
+            code=$(script_code "${step_path[$i]}")
+            if [ "$new_code" -lt "$code" ]; then
+                np+=("$path")
+                nu+=("$user")
+                ne+=(1)
+                placed=1
+            fi
+        fi
+        np+=("${step_path[$i]}")
+        nu+=("${step_user[$i]}")
+        ne+=("${step_enabled[$i]}")
+    done
+    if [ "$placed" -eq 0 ]; then
+        np+=("$path")
+        nu+=("$user")
+        ne+=(1)
+    fi
+    step_path=("${np[@]}")
+    step_user=("${nu[@]}")
+    step_enabled=("${ne[@]}")
     for i in "${!step_path[@]}"; do
         if [ "${step_path[$i]}" = "$path" ]; then
-            step_enabled[$i]=1
             menu_pos=$i
-            logr "Уже в наборе, отмечен: $path"
-            return 0
+            break
         fi
     done
-    step_path+=("$path")
-    if is_user_script "$path"; then
-        step_user+=(1)
-    else
-        step_user+=(0)
-    fi
-    step_enabled+=(1)
-    idx=$((${#step_path[@]} - 1))
-    if is_user_script "$path"; then
-        add_need "$idx" "TARGET_USER" "Пользователь, от которого запустить $path"
-    fi
-    import_needs_for "$path" "$idx"
-    menu_pos=$idx
     logr "Добавлен шаг: $path"
 }
 
@@ -320,21 +402,30 @@ toggle_step_at() {
     fi
 }
 
-# Добавляет отмеченные команды. Если отметок нет, добавляет строку под курсором.
+# Кладёт отмеченные команды в основной набор. Если отметок нет, берёт строку под курсором.
 commit_add_selection() {
-    local pos=$1 i any=0
+    local pos=$1 i any=0 first="" path
     for i in "${!add_on[@]}"; do
         [ "${add_on[$i]}" = 1 ] && any=1
     done
     if [ "$any" -eq 1 ]; then
         for i in "${!add_choice[@]}"; do
             [ "${add_on[$i]}" = 1 ] || continue
-            append_step "${add_choice[$i]}"
+            path="${add_choice[$i]}"
+            [ -z "$first" ] && first=$path
+            insert_step "$path"
         done
-        return 0
+    elif [ "$pos" -lt "${#add_choice[@]}" ]; then
+        first="${add_choice[$pos]}"
+        insert_step "$first"
     fi
-    if [ "$pos" -lt "${#add_choice[@]}" ]; then
-        append_step "${add_choice[$pos]}"
+    if [ -n "$first" ]; then
+        for i in "${!step_path[@]}"; do
+            if [ "${step_path[$i]}" = "$first" ]; then
+                menu_pos=$i
+                break
+            fi
+        done
     fi
 }
 
@@ -542,54 +633,72 @@ set_env_value() {
     export "$var"
 }
 
-# Спрашивает переменные только отмеченных шагов. Пустое значение не принимается.
-collect_needs() {
-    local j idx var prompt text answer val
-    local -a missing
-    missing=()
-    for j in "${!need_var[@]}"; do
-        idx="${need_step[$j]}"
-        [ "${step_enabled[$idx]}" = 1 ] || continue
-        var="${need_var[$j]}"
-        val=$(env_value "$var")
-        if [ -n "$val" ]; then
-            export "$var"
-            continue
-        fi
-        if [ "$batch_prompt" -ne 1 ]; then
-            local already=0 m
-            for m in "${missing[@]+"${missing[@]}"}"; do
-                [ "$m" = "$var" ] && already=1
-            done
-            [ "$already" -eq 1 ] || missing+=("$var")
-            continue
-        fi
-        prompt="${need_prompt[$j]}"
-        [ -n "$prompt" ] || prompt="$var"
-        if [ "$var" = "VERSION" ] && [[ "$prompt" != *"(26)"* ]]; then
-            prompt="$prompt (26)"
-        fi
-        while true; do
-            read -r -p "$prompt: " answer || {
-                logerr "Ввод закрыт"
-                return 1
-            }
-            if [ -z "$answer" ] && [ "$var" = "VERSION" ]; then
-                answer=26
+# Имена обязательных аргументов отмеченных шагов, которых нет в окружении.
+missing_required() {
+    local i path idx j name seen="" val
+    for i in "${!step_path[@]}"; do
+        [ "${step_enabled[$i]}" = 1 ] || continue
+        path="${step_path[$i]}"
+        idx=$(cmd_index "$path") || continue
+        for j in "${!arg_cmd[@]}"; do
+            [ "${arg_cmd[$j]}" = "$idx" ] || continue
+            [ "${arg_required[$j]}" = 1 ] || continue
+            name="${arg_name[$j]}"
+            case " $seen " in
+                *" $name "*) continue ;;
+            esac
+            val=$(env_value "$name")
+            if [ -z "$val" ]; then
+                printf '%s\n' "$name"
+                seen="$seen $name"
+            else
+                export "$name"
             fi
-            if [ -n "$answer" ]; then
-                set_env_value "$var" "$answer"
-                break
-            fi
-            logr "Пустое значение не принимается: $var"
         done
     done
-    if [ "${#missing[@]}" -gt 0 ]; then
-        for var in "${missing[@]}"; do
-            logerr "Нет переменной $var"
-        done
+}
+
+# Без интерактива останавливает батч, если обязательного аргумента нет.
+# В интерактиве ничего не проверяет: значение спросит сам скрипт.
+require_args() {
+    local name
+    local -a missing=()
+    [ "$batch_prompt" -eq 1 ] && return 0
+    while IFS= read -r name; do
+        [ -n "$name" ] || continue
+        missing+=("$name")
+    done < <(missing_required)
+    if [ "${#missing[@]}" -eq 0 ]; then
+        return 0
+    fi
+    for name in "${missing[@]}"; do
+        logerr "Нет переменной $name"
+    done
+    return 1
+}
+
+# Спрашивает TARGET_USER сразу перед шагом, который запускается от пользователя.
+prompt_target_user() {
+    local answer
+    if [ -n "${TARGET_USER:-}" ]; then
+        export TARGET_USER
+        return 0
+    fi
+    if [ "$batch_prompt" -ne 1 ]; then
+        logerr "Нет переменной TARGET_USER"
         return 1
     fi
+    while true; do
+        read -r -p "Пользователь, от которого запустить шаг: " answer || {
+            logerr "Ввод закрыт"
+            return 1
+        }
+        if [ -n "$answer" ]; then
+            set_env_value TARGET_USER "$answer"
+            return 0
+        fi
+        logr "Пустое значение не принимается: TARGET_USER"
+    done
 }
 
 enabled_count() {
@@ -618,6 +727,7 @@ run_steps() {
         log "${COL_FG_WHITE}# ${name}${COL_RES}"
         set +e
         if [ "${step_user[$i]}" = 1 ]; then
+            prompt_target_user || exit 1
             sudo -u "$TARGET_USER" -H bash "$script"
         else
             bash "$script"
@@ -708,9 +818,9 @@ main() {
         batch_prompt=1
     fi
 
-    # Без меню нехватку NEED сообщаем до root и до первого скрипта.
+    # Без меню нехватку аргументов сообщаем до root и до первого скрипта.
     if [ "$batch_prompt" -ne 1 ]; then
-        collect_needs || exit 1
+        require_args || exit 1
     fi
 
     checkRoot
@@ -728,7 +838,6 @@ main() {
         if [ "$menu_status" -ne 0 ]; then
             exit "$menu_status"
         fi
-        collect_needs || exit 1
     fi
 
     if [ "$(enabled_count)" -eq 0 ]; then

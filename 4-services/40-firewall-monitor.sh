@@ -31,6 +31,12 @@ if [ -f "$ENV_PATH" ]; then
     source "$ENV_PATH"
     set +a
 fi
+if [ -z "${TELEGRAM_API_TOKEN:-}" ] && [ -t 0 ]; then
+    read -r -p "Токен Telegram-бота: " TELEGRAM_API_TOKEN || true
+fi
+if [ -z "${TELEGRAM_CHAT_ID:-}" ] && [ -t 0 ]; then
+    read -r -p "Идентификатор чата Telegram: " TELEGRAM_CHAT_ID || true
+fi
 if [ -z "${TELEGRAM_API_TOKEN:-}" ] || [ -z "${TELEGRAM_CHAT_ID:-}" ]; then
     logerr "Нет TELEGRAM_API_TOKEN или TELEGRAM_CHAT_ID в окружении или в $ENV_PATH. Таймер не включён"
     exit 1

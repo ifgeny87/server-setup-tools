@@ -47,9 +47,9 @@ LC_ALL=en_US.UTF-8
 EOF
 )
 bash_body=$(cat <<'EOF'
-export HISTTIMEFORMAT=\"%Y-%m-%d %H:%M:%S  \"
+export HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S  "
 # 30 black, 31, red, 36 cyan, 32 green, 33;1 yellow, 34 blue
-export PS1=\"\[\033[31;1m\]\u\[\033[33;1m\]@\[\033[36;1m\]\h\[\033[m\]:\[\033[34;1m\]\w\[\033[m\]$ \"
+export PS1="\[\033[31;1m\]\u\[\033[33;1m\]@\[\033[36;1m\]\h\[\033[m\]:\[\033[34;1m\]\w\[\033[m\]$ "
 export CLICOLOR=1
 export LSCOLORS=ExFxBxDxCxegedabagacad
 EOF

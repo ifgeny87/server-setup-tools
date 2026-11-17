@@ -85,6 +85,7 @@ test_add_choices() {
     capture env ROOT="$ROOT" bash -s << 'EOF'
 set -euo pipefail
 source "$ROOT/batch/run.sh"
+load_commands
 step_path=("1-server-setup/10-prepare-tools.sh" "4-services/42-manage-forward.sh")
 collect_add_choices
 printf '%s\n' "${add_choice[@]}"
@@ -96,6 +97,10 @@ EOF
         && fail "add: 42 остался в списке" "$CAP_OUT"
     printf '%s\n' "$CAP_OUT" | grep -qx '1-server-setup/11-remove-mail-server.sh' \
         || fail "add: нет скрипта вне набора" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx '3-user-setup/31-generate-ssh-keys.sh' \
+        || fail "add: нет скрипта 31" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx '2-install-software/22-install-docker-ubuntu.sh' \
+        && fail "add: вспомогательный docker-скрипт попал в список" "$CAP_OUT"
     local n uniq
     n=$(printf '%s\n' "$CAP_OUT" | grep -c '\.sh$' || true)
     uniq=$(printf '%s\n' "$CAP_OUT" | grep '\.sh$' | sort -u | wc -l | tr -d ' ')
@@ -120,7 +125,8 @@ printf '%s\n' "${step_path[@]}"
 add_choice=("3-user-setup/30-add-user.sh" "4-services/40-setup-cron.sh")
 add_on=(0 0)
 commit_add_selection 1
-printf 'one:%s\n' "${step_path[$((${#step_path[@]} - 1))]}"
+printf 'order:%s\n' "$(IFS=,; printf '%s' "${step_path[*]}")"
+printf 'flags:%s\n' "$(IFS=,; printf '%s' "${step_enabled[*]}")"
 EOF
     [ "$CAP_CODE" -eq 0 ] || fail "marks: код $CAP_CODE" "$CAP_OUT"
     printf '%s\n' "$CAP_OUT" | grep -qx 'enabled:0' \
@@ -129,11 +135,103 @@ EOF
         || fail "marks: нет первой отметки" "$CAP_OUT"
     printf '%s\n' "$CAP_OUT" | grep -qx '4-services/42-manage-forward.sh' \
         || fail "marks: нет второй отметки" "$CAP_OUT"
-    printf '%s\n' "$CAP_OUT" | grep -qx 'one:4-services/40-setup-cron.sh' \
-        || fail "marks: без отметок не взята строка курсора" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx 'order:1-server-setup/10-prepare-tools.sh,1-server-setup/11-remove-mail-server.sh,4-services/40-setup-cron.sh,4-services/42-manage-forward.sh' \
+        || fail "marks: команды не встали по коду" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx 'flags:0,1,1,1' \
+        || fail "marks: добавленные команды не отмечены" "$CAP_OUT"
     printf '%s\n' "$CAP_OUT" | grep -qx '3-user-setup/30-add-user.sh' \
         && fail "marks: неотмеченная команда попала в набор" "$CAP_OUT"
     ok "пробел отмечает шаги и несколько команд"
+}
+
+# Каталог команд отсортирован, пресеты больше не содержат NEED.
+test_commands_catalog() {
+    local conf
+    for conf in "$ROOT/batch/presets/"*.conf; do
+        grep -q '^NEED ' "$conf" && fail "catalog: NEED остался в $conf" "$(cat "$conf")"
+    done
+    capture env ROOT="$ROOT" bash -s << 'EOF'
+set -euo pipefail
+source "$ROOT/batch/run.sh"
+load_commands
+printf '%s\n' "${cmd_path[@]}"
+idx=$(cmd_index "4-services/42-manage-forward.sh")
+for j in "${!arg_cmd[@]}"; do
+    [ "${arg_cmd[$j]}" = "$idx" ] || continue
+    printf 'arg42:%s %s %s\n' "${arg_name[$j]}" "${arg_type[$j]}" "${arg_required[$j]}"
+done
+EOF
+    [ "$CAP_CODE" -eq 0 ] || fail "catalog: код $CAP_CODE" "$CAP_OUT"
+    local first
+    first=$(printf '%s\n' "$CAP_OUT" | grep '\.sh$' | head -1)
+    [ "$first" = "1-server-setup/10-prepare-tools.sh" ] || fail "catalog: первая команда не 10" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx '3-user-setup/31-generate-ssh-keys.sh' \
+        || fail "catalog: нет скрипта 31" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -q '22-install-docker-ubuntu.sh' \
+        && fail "catalog: вспомогательный скрипт docker попал в команды" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx 'arg42:LOCAL_SSH_PORT port 0' \
+        || fail "catalog: нет LOCAL_SSH_PORT у скрипта 42" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx 'arg42:LOCAL_AWG_PORT port 0' \
+        || fail "catalog: нет LOCAL_AWG_PORT у скрипта 42" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx 'arg42:LOCAL_IP ip 0' \
+        || fail "catalog: нет LOCAL_IP у скрипта 42" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx 'arg42:SERVER_SSH_PORT port 0' \
+        || fail "catalog: нет SERVER_SSH_PORT у скрипта 42" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx 'arg42:SERVER_AWG_PORT port 0' \
+        || fail "catalog: нет SERVER_AWG_PORT у скрипта 42" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx 'arg42:SERVER_IP ip 0' \
+        || fail "catalog: нет SERVER_IP у скрипта 42" "$CAP_OUT"
+    ok "каталог команд без NEED в пресетах"
+}
+
+# Интерактив не проверяет аргументы. Без интерактива пустое обязательное значение — ошибка.
+test_require_args() {
+    capture env -u NEW_USER_LOGIN -u NEW_USER_SSH_KEY -u TARGET_USER ROOT="$ROOT" bash -s << 'EOF'
+set -euo pipefail
+source "$ROOT/batch/run.sh"
+load_commands
+step_path=("1-server-setup/12-add-user.sh")
+step_user=(0)
+step_enabled=(1)
+batch_prompt=1
+require_args
+echo interactive:ok
+step_enabled=(0)
+batch_prompt=0
+require_args
+echo disabled:ok
+step_path=("2-install-software/20-install-oh-my-zsh.sh")
+step_user=(1)
+step_enabled=(1)
+if require_args; then
+    echo strict:accepted
+else
+    echo strict:rejected
+fi
+EOF
+    [ "$CAP_CODE" -eq 0 ] || fail "args: код $CAP_CODE" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx 'interactive:ok' || fail "args: интерактив проверял аргументы" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx 'disabled:ok' || fail "args: снятый шаг потребовал аргумент" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -q 'Нет переменной TARGET_USER' || fail "args: нет отказа TARGET_USER" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -qx 'strict:rejected' || fail "args: пустой TARGET_USER принят" "$CAP_OUT"
+    ok "аргументы проверяются только без интерактива"
+}
+
+# Скрипт 31 создаёт пару ключей и второй раз её не затирает.
+test_ssh_keys() {
+    local dir pub
+    dir=$(mktemp -d)
+    capture env HOME="$dir" "$ROOT/3-user-setup/31-generate-ssh-keys.sh"
+    [ "$CAP_CODE" -eq 0 ] || fail "keys: код $CAP_CODE" "$CAP_OUT"
+    [ -f "$dir/.ssh/id_ed25519" ] || fail "keys: нет приватного ключа" "$CAP_OUT"
+    [ -f "$dir/.ssh/id_ed25519.pub" ] || fail "keys: нет публичного ключа" "$CAP_OUT"
+    pub=$(cat "$dir/.ssh/id_ed25519.pub")
+    capture env HOME="$dir" "$ROOT/3-user-setup/31-generate-ssh-keys.sh"
+    [ "$CAP_CODE" -eq 0 ] || fail "keys: повтор, код $CAP_CODE" "$CAP_OUT"
+    printf '%s\n' "$CAP_OUT" | grep -q 'Ключи уже есть' || fail "keys: повтор создал ключ заново" "$CAP_OUT"
+    [ "$(cat "$dir/.ssh/id_ed25519.pub")" = "$pub" ] || fail "keys: публичный ключ изменился" "$CAP_OUT"
+    rm -rf "$dir"
+    ok "скрипт 31 создаёт пару ключей один раз"
 }
 
 # Первый шаг падает на заглушке apt-get, второй не стартует.
@@ -479,6 +577,9 @@ test_launch_env
 test_missing_var
 test_add_choices
 test_add_marks
+test_commands_catalog
+test_require_args
+test_ssh_keys
 test_stop_on_error
 test_forward
 test_foreign_error_page
